@@ -1,0 +1,389 @@
+{
+  "theme": {
+    "canvasBg": "#050811",
+    "gridOpacity": 35,
+    "glowOpacity": 12
+  },
+  "zones": [
+    {
+      "id": "zone-gimpo",
+      "title": "김포 센터 (GIMPO CENTER)",
+      "x": 20,
+      "y": 15,
+      "width": 620,
+      "height": 260,
+      "borderColor": "#00e5ff",
+      "borderOpacity": 0.35,
+      "bgColor": "#436ac7",
+      "bgOpacity": 0.45
+    },
+    {
+      "id": "zone-yeouido",
+      "title": "여의도 센터 (YEOUIDO CENTER)",
+      "x": 660,
+      "y": 15,
+      "width": 446,
+      "height": 269,
+      "borderColor": "#00e5ff",
+      "borderOpacity": 0.35,
+      "bgColor": "#436ac7",
+      "bgOpacity": 0.45
+    },
+    {
+      "id": "zone-core",
+      "title": "국내 코어 클러스터 (DOMESTIC CUCM CORE)",
+      "x": 28,
+      "y": 293,
+      "width": 1037,
+      "height": 326,
+      "borderColor": "#00e5ff",
+      "borderOpacity": 0.35,
+      "bgColor": "#9843c7",
+      "bgOpacity": 0.45
+    },
+    {
+      "id": "zone-overseas",
+      "title": "국외 SIP (GLOBAL)",
+      "x": 1120,
+      "y": 15,
+      "width": 280,
+      "height": 765,
+      "borderColor": "#00e5ff",
+      "borderOpacity": 0.35,
+      "bgColor": "#43c794",
+      "bgOpacity": 0.45
+    },
+    {
+      "id": "zone_1791940182331",
+      "title": "사용자 망",
+      "x": 61,
+      "y": 633,
+      "width": 962,
+      "height": 141,
+      "borderColor": "#00e5ff",
+      "borderOpacity": 0.35,
+      "bgColor": "#c443c7",
+      "bgOpacity": 0.45
+    }
+  ],
+  "nodes": [
+    {
+      "id": "node-gimpo-other",
+      "type": "cloud",
+      "name": "OTHER",
+      "sub": "전용선 / 외곽망 연계",
+      "calls": 142,
+      "status": "UP",
+      "x": 80,
+      "y": 45
+    },
+    {
+      "id": "node-gimpo-isp",
+      "type": "cloud",
+      "name": "ISP",
+      "sub": "국선 E1 / SIP 인입",
+      "calls": 520,
+      "status": "UP",
+      "x": 380,
+      "y": 45
+    },
+    {
+      "id": "node-oversea",
+      "type": "vg",
+      "name": "OVER SEA",
+      "sub": "Active: 48",
+      "calls": 48,
+      "status": "UP",
+      "x": 48,
+      "y": 176
+    },
+    {
+      "id": "node-smevg",
+      "type": "vg",
+      "name": "SMEVG",
+      "sub": "Ch 사용률: 60%",
+      "calls": 180,
+      "status": "UP",
+      "x": 235,
+      "y": 175
+    },
+    {
+      "id": "node-gimpo-vg",
+      "type": "vg",
+      "name": "VG1 ~ 6",
+      "sub": "인입 호: 420 ch",
+      "calls": 420,
+      "status": "UP",
+      "x": 425,
+      "y": 175
+    },
+    {
+      "id": "node-yeouido-isp",
+      "type": "cloud",
+      "name": "ISP",
+      "sub": "국선 E1 백업/분산",
+      "calls": 310,
+      "status": "UP",
+      "x": 665,
+      "y": 49
+    },
+    {
+      "id": "node-yeouido-vg",
+      "type": "vg",
+      "name": "VG1 ~ 6",
+      "sub": "인입 호: 310 ch",
+      "calls": 310,
+      "status": "UP",
+      "x": 689,
+      "y": 175
+    },
+    {
+      "id": "node_1791934986777",
+      "type": "vg",
+      "name": "VG 7~10",
+      "sub": "Active: 100",
+      "calls": 100,
+      "status": "UP",
+      "x": 952.568,
+      "y": 180.62
+    },
+    {
+      "id": "node-sme",
+      "type": "cucm",
+      "name": "SME",
+      "sub": "중앙 통화: 980 calls",
+      "calls": 980,
+      "status": "UP",
+      "x": 286,
+      "y": 363
+    },
+    {
+      "id": "node-hq",
+      "type": "cucm",
+      "name": "HQ",
+      "sub": "내선 통화량: 320 calls",
+      "calls": 320,
+      "status": "UP",
+      "x": 712,
+      "y": 362
+    },
+    {
+      "id": "node-sales2",
+      "type": "cucm",
+      "name": "영업2",
+      "sub": "통화량: 380 calls",
+      "calls": 380,
+      "status": "UP",
+      "x": 128,
+      "y": 486
+    },
+    {
+      "id": "node-sales1",
+      "type": "cucm",
+      "name": "영업1",
+      "sub": "통화량: 480 calls",
+      "calls": 480,
+      "status": "UP",
+      "x": 869,
+      "y": 521
+    },
+    {
+      "id": "node_1791940364823",
+      "type": "cucm",
+      "name": "호치민",
+      "sub": "호치민 CME",
+      "calls": 3,
+      "status": "UP",
+      "x": 1179.775,
+      "y": 288.939
+    },
+    {
+      "id": "node-hk",
+      "type": "cucm",
+      "name": "홍콩",
+      "sub": "34 calls (42ms)",
+      "calls": 34,
+      "status": "UP",
+      "x": 1178,
+      "y": 399
+    },
+    {
+      "id": "node-ny",
+      "type": "cucm",
+      "name": "뉴욕",
+      "sub": "22 calls (168ms)",
+      "calls": 22,
+      "status": "UP",
+      "x": 1175,
+      "y": 520
+    },
+    {
+      "id": "node-phone2",
+      "type": "phone",
+      "name": "영업 2 단말군",
+      "sub": "740대 (99.7%)",
+      "calls": 380,
+      "status": "UP",
+      "x": 230,
+      "y": 665
+    },
+    {
+      "id": "node_1791940120061",
+      "type": "phone",
+      "name": "본부 전화기",
+      "sub": "Active: 100",
+      "calls": 100,
+      "status": "UP",
+      "x": 537.201,
+      "y": 670.948
+    },
+    {
+      "id": "node-phone1",
+      "type": "phone",
+      "name": "영업 1 단말군",
+      "sub": "920대 (99.5%)",
+      "calls": 480,
+      "status": "UP",
+      "x": 844,
+      "y": 669
+    }
+  ],
+  "trunks": [
+    {
+      "id": "t_gimpo_other_smevg",
+      "from": "node-gimpo-other",
+      "to": "node-smevg",
+      "type": "inbound",
+      "calls": 142,
+      "status": "UP"
+    },
+    {
+      "id": "t_oversea_smevg",
+      "from": "node-oversea",
+      "to": "node-smevg",
+      "type": "core",
+      "calls": 48,
+      "status": "UP"
+    },
+    {
+      "id": "t_gimpo_isp_vg",
+      "from": "node-gimpo-isp",
+      "to": "node-gimpo-vg",
+      "type": "inbound",
+      "calls": 420,
+      "status": "UP"
+    },
+    {
+      "id": "t_yeouido_isp_vg",
+      "from": "node-yeouido-isp",
+      "to": "node-yeouido-vg",
+      "type": "inbound",
+      "calls": 310,
+      "status": "UP"
+    },
+    {
+      "id": "t_node-yeouido-vg_node_1791934986777_1791935098137",
+      "from": "node-yeouido-vg",
+      "to": "node_1791934986777",
+      "type": "core",
+      "calls": 120,
+      "status": "UP"
+    },
+    {
+      "id": "t_smevg_sme",
+      "from": "node-smevg",
+      "to": "node-sme",
+      "type": "core",
+      "calls": 180,
+      "status": "UP"
+    },
+    {
+      "id": "t_gimpo_vg_sme",
+      "from": "node-gimpo-vg",
+      "to": "node-sme",
+      "type": "core",
+      "calls": 420,
+      "status": "UP"
+    },
+    {
+      "id": "t_yeouido_vg_sme",
+      "from": "node-yeouido-vg",
+      "to": "node-sme",
+      "type": "core",
+      "calls": 310,
+      "status": "UP"
+    },
+    {
+      "id": "t_sme_hq",
+      "from": "node-sme",
+      "to": "node-hq",
+      "type": "core",
+      "calls": 120,
+      "status": "UP"
+    },
+    {
+      "id": "t_sme_sales2",
+      "from": "node-sme",
+      "to": "node-sales2",
+      "type": "branch",
+      "calls": 380,
+      "status": "UP"
+    },
+    {
+      "id": "t_sme_sales1",
+      "from": "node-sme",
+      "to": "node-sales1",
+      "type": "branch",
+      "calls": 480,
+      "status": "UP"
+    },
+    {
+      "id": "t_sales2_phone2",
+      "from": "node-sales2",
+      "to": "node-phone2",
+      "type": "phone",
+      "calls": 380,
+      "status": "UP"
+    },
+    {
+      "id": "t_node-hq_node_1791940120061_1791940127736",
+      "from": "node-hq",
+      "to": "node_1791940120061",
+      "type": "core",
+      "calls": 60,
+      "status": "UP"
+    },
+    {
+      "id": "t_sales1_phone1",
+      "from": "node-sales1",
+      "to": "node-phone1",
+      "type": "phone",
+      "calls": 480,
+      "status": "UP"
+    },
+    {
+      "id": "t_node-hq_node_1791940364823_1791940373661",
+      "from": "node-hq",
+      "to": "node_1791940364823",
+      "type": "core",
+      "calls": 34,
+      "status": "UP"
+    },
+    {
+      "id": "t_sales1_hk",
+      "from": "node-sales1",
+      "to": "node-hk",
+      "type": "overseas",
+      "calls": 34,
+      "status": "UP"
+    },
+    {
+      "id": "t_sales1_ny",
+      "from": "node-sales1",
+      "to": "node-ny",
+      "type": "overseas",
+      "calls": 22,
+      "status": "UP"
+    }
+  ]
+}

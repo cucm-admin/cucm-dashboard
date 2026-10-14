@@ -1,0 +1,3072 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CISCO CUCM IPT 통합 관제 전광판 (NOC Wallboard & C8300 E1 Inspector)</title>
+  
+  <!-- Web Fonts: Pretendard, Chakra Petch, Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #050811;
+      --bg-grid: rgba(0, 229, 255, 0.035);
+      --bg-radial-opacity: 0.12;
+      --tag-dot: #00e5ff;
+      
+      --cucm-blue: #00e5ff;
+      --cucm-glow: rgba(0, 229, 255, 0.4);
+      --cucm-bg: linear-gradient(180deg, rgba(10, 25, 47, 0.94) 0%, rgba(6, 16, 32, 0.96) 100%);
+      
+      --vg-green: #00f5a0;
+      --vg-glow: rgba(0, 245, 160, 0.4);
+      --vg-bg: linear-gradient(180deg, rgba(4, 40, 30, 0.94) 0%, rgba(2, 24, 18, 0.96) 100%);
+      
+      --cloud-purple: #a78bfa;
+      --cloud-glow: rgba(167, 139, 250, 0.4);
+      --cloud-bg: linear-gradient(180deg, rgba(28, 24, 60, 0.94) 0%, rgba(16, 14, 40, 0.96) 100%);
+      
+      --phone-amber: #f59e0b;
+      --phone-glow: rgba(245, 158, 11, 0.45);
+      
+      --status-up: #00f5a0;
+      --status-warn: #f59e0b;
+      --status-down: #ff3366;
+      
+      --hud-border: rgba(56, 189, 248, 0.22);
+      --hud-corner: #00e5ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(0, 229, 255, var(--bg-radial-opacity, 0.12)) 0%, transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(0, 245, 160, calc(var(--bg-radial-opacity, 0.12) * 0.7)) 0%, transparent 50%),
+        linear-gradient(var(--bg-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+      color: #f1f5f9;
+      font-family: 'Inter', 'Noto Sans KR', sans-serif;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: background-color 0.25s ease;
+    }
+
+    /* =========================================================
+       1. TOP HEADER (COMPACT & SLEEK)
+       ========================================================= */
+    header {
+      height: 58px;
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(6, 11, 24, 0.95);
+      border-bottom: 1px solid rgba(0, 229, 255, 0.25);
+      backdrop-filter: blur(16px);
+      z-index: 100;
+      flex-shrink: 0;
+      gap: 14px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .brand-icon-box {
+      width: 34px;
+      height: 34px;
+      border-radius: 6px;
+      background: rgba(0, 229, 255, 0.1);
+      border: 1px solid rgba(0, 229, 255, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+    }
+
+    .brand-icon-box svg {
+      width: 20px;
+      height: 20px;
+      stroke: #00e5ff;
+    }
+
+    .brand-text-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+      white-space: nowrap;
+    }
+
+    .brand-text-sub {
+      font-size: 10px;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* KPI Bar - Compact Horizontal Pills */
+    .kpi-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .kpi-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      white-space: nowrap;
+      height: 32px;
+    }
+
+    .kpi-pill-label {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .kpi-pill-val {
+      font-family: 'Chakra Petch', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Controls Section */
+    .controls-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .hud-btn {
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2e8f0;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 30px;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .hud-btn:hover {
+      background: rgba(0, 229, 255, 0.2);
+      border-color: #00e5ff;
+      color: #fff;
+    }
+
+    .btn-edit-mode {
+      background: rgba(0, 229, 255, 0.15);
+      border: 1px solid #00e5ff;
+      color: #00e5ff;
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+    }
+
+    .btn-edit-mode.active {
+      background: #00e5ff;
+      color: #061020;
+      box-shadow: 0 0 18px rgba(0, 229, 255, 0.7);
+    }
+
+    .hud-select {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(0, 229, 255, 0.4);
+      color: #00e5ff;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      height: 30px;
+      white-space: nowrap;
+    }
+
+    .clock-display {
+      font-family: 'Chakra Petch', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: #00e5ff;
+      padding-left: 6px;
+      border-left: 1px solid rgba(255, 255, 255, 0.15);
+      white-space: nowrap;
+    }
+
+    /* =========================================================
+       2. EDIT TOOLBAR (DRAGGABLE & COLLAPSIBLE FLOATING PALETTE)
+       ========================================================= */
+    #edit-toolbar {
+      position: absolute;
+      top: 68px;
+      left: 180px; /* Moved away from center to avoid covering top nodes */
+      background: rgba(9, 14, 28, 0.97);
+      border: 1.5px solid #00e5ff;
+      box-shadow: 0 0 25px rgba(0, 229, 255, 0.45), 0 8px 30px rgba(0,0,0,0.8);
+      border-radius: 8px;
+      padding: 6px 12px;
+      display: none; /* Shown in Edit mode */
+      align-items: center;
+      gap: 7px;
+      z-index: 250;
+      backdrop-filter: blur(14px);
+      cursor: default;
+    }
+
+    .toolbar-drag-handle {
+      cursor: move;
+      color: #00e5ff;
+      font-size: 14px;
+      font-weight: 900;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(0, 229, 255, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tool-btn {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 5px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .tool-btn:hover {
+      border-color: #00e5ff;
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+    }
+
+    .tool-btn.btn-connect.active {
+      background: #f59e0b;
+      color: #000;
+      border-color: #f59e0b;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.8);
+      animation: pulse 1s infinite;
+    }
+
+    .tool-divider {
+      width: 1px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Folded toolbar mode */
+    #edit-toolbar.folded .toolbar-content {
+      display: none;
+    }
+
+    /* =========================================================
+       3. TOPOLOGY VIEWPORT & LAYERS
+       ========================================================= */
+    .viewport-canvas {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: calc(100vh - 58px);
+      overflow: hidden;
+      background-position: center;
+    }
+
+    /* LAYER 1: Background HUD Zones (z-index: 1) */
+    .hud-zone {
+      position: absolute;
+      background: rgba(8, 14, 28, 0.45);
+      border: 1px solid var(--hud-border);
+      border-radius: 8px;
+      backdrop-filter: blur(2px);
+      box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.7);
+      z-index: 1;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+      cursor: pointer; /* Clickable in view mode for drilldown! */
+    }
+
+    .hud-zone:hover {
+      border-color: rgba(0, 229, 255, 0.4);
+    }
+
+    .hud-zone::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 12px;
+      height: 12px;
+      border-top: 2px solid var(--hud-corner);
+      border-left: 2px solid var(--hud-corner);
+      pointer-events: none;
+    }
+
+    .hud-zone::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 12px;
+      height: 12px;
+      border-bottom: 2px solid var(--hud-corner);
+      border-right: 2px solid var(--hud-corner);
+      pointer-events: none;
+    }
+
+    .hud-zone-tag {
+      position: absolute;
+      top: -10px;
+      left: 16px;
+      background: #090e1c;
+      border: 1px solid var(--hud-border);
+      color: #7dd3fc;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      padding: 1px 10px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+      z-index: 3;
+      cursor: pointer;
+    }
+
+    .hud-zone-tag:hover {
+      color: #00e5ff;
+      border-color: #00e5ff;
+    }
+
+    .hud-zone-tag::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--tag-dot, #00e5ff);
+      box-shadow: 0 0 6px var(--tag-dot, #00e5ff);
+    }
+
+    /* Zone Edit Actions */
+    .zone-actions {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      display: none; /* Shown in Edit mode */
+      gap: 4px;
+      z-index: 5;
+    }
+
+    .body-edit-mode .zone-actions {
+      display: flex;
+    }
+
+    .zone-action-btn {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #94a3b8;
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-size: 10px;
+      cursor: pointer;
+    }
+
+    .zone-action-btn:hover {
+      color: #fff;
+      border-color: #00e5ff;
+    }
+
+    .zone-resize-handle {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 14px;
+      height: 14px;
+      cursor: nwse-resize;
+      display: none;
+      z-index: 5;
+    }
+
+    .zone-resize-handle::after {
+      content: '';
+      position: absolute;
+      right: 2px;
+      bottom: 2px;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid #00e5ff;
+      border-bottom: 2px solid #00e5ff;
+    }
+
+    .body-edit-mode .zone-resize-handle {
+      display: block;
+    }
+
+    .body-edit-mode .hud-zone {
+      cursor: move;
+      border-style: dashed;
+    }
+
+    /* LAYER 2: SVG TRUNK LINES (z-index: 10) */
+    #svg-connections {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* LAYER 3: CANVAS PARTICLES (z-index: 12) */
+    #particle-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 12;
+    }
+
+    /* LAYER 4: MIDPOINT TRUNK BADGES (z-index: 15) */
+    #trunk-badges-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    .trunk-pill {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      background: rgba(9, 14, 28, 0.94);
+      border: 1px solid rgba(0, 229, 255, 0.5);
+      border-radius: 20px;
+      padding: 2px 8px;
+      font-family: 'Chakra Petch', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      color: #e0f2fe;
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.3), 0 4px 10px rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      pointer-events: auto;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .trunk-pill:hover {
+      transform: translate(-50%, -50%) scale(1.1);
+      border-color: #00e5ff;
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.7);
+    }
+
+    .trunk-pill.down {
+      border-color: #ff3366;
+      color: #fecdd3;
+      background: rgba(50, 10, 20, 0.95);
+      box-shadow: 0 0 12px rgba(255, 51, 102, 0.5);
+    }
+
+    @keyframes lineFlow {
+      from { stroke-dashoffset: 24; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    .circuit-line {
+      stroke-dasharray: 8 5;
+      animation: lineFlow 1.2s linear infinite;
+    }
+
+    /* =========================================================
+       4. HIGH-TECH NODE CARDS (z-index: 20)
+       ========================================================= */
+    .node-base {
+      position: absolute;
+      z-index: 20;
+      cursor: pointer;
+      transition: box-shadow 0.2s, transform 0.2s;
+      box-sizing: border-box;
+    }
+
+    .node-base:hover {
+      transform: translateY(-2px);
+    }
+
+    .body-edit-mode .node-base {
+      cursor: move !important;
+    }
+
+    /* (1) 각진 사각형: CUCM */
+    .node-cucm {
+      background: var(--cucm-bg);
+      border: 1.5px solid var(--cucm-blue);
+      border-radius: 0px !important;
+      box-shadow: 0 0 16px var(--cucm-glow), inset 0 0 12px rgba(0, 229, 255, 0.12);
+      padding: 10px 14px;
+      min-width: 145px;
+    }
+
+    .node-cucm::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #00e5ff, transparent);
+    }
+
+    /* (2) 각 없는 사각형: VG */
+    .node-vg {
+      background: var(--vg-bg);
+      border: 1.5px solid var(--vg-green);
+      border-radius: 14px !important;
+      box-shadow: 0 0 16px var(--vg-glow), inset 0 0 12px rgba(0, 245, 160, 0.12);
+      padding: 10px 14px;
+      min-width: 145px;
+    }
+
+    /* (3) 구름: 통신사 / ISP */
+    .node-cloud {
+      background: var(--cloud-bg);
+      border: 1.5px solid var(--cloud-purple);
+      border-radius: 24px;
+      box-shadow: 0 0 16px var(--cloud-glow), inset 0 0 12px rgba(167, 139, 250, 0.15);
+      padding: 8px 18px;
+      min-width: 135px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* (4) 세모: 전화기 단말군 */
+    .node-phone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      width: 90px;
+    }
+
+    .triangle-poly {
+      width: 80px;
+      height: 68px;
+      filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.6));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .triangle-svg-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .triangle-inner-info {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    .triangle-inner-info svg {
+      width: 16px;
+      height: 16px;
+      fill: #fef08a;
+    }
+
+    .triangle-count {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fef08a;
+    }
+
+    .phone-sub-caption {
+      margin-top: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    /* Node Inners */
+    .node-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .node-badge-tag {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tag-cucm { background: rgba(0, 229, 255, 0.25); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.4); }
+    .tag-vg { background: rgba(0, 245, 160, 0.25); color: #00f5a0; border: 1px solid rgba(0, 245, 160, 0.4); }
+    .tag-cloud { background: rgba(167, 139, 250, 0.25); color: #c4b5fd; border: 1px solid rgba(167, 139, 250, 0.4); }
+
+    .node-title-text {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+
+    .status-light {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .led-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .led-dot.up {
+      background: var(--status-up);
+      box-shadow: 0 0 6px var(--status-up);
+    }
+
+    .led-dot.down {
+      background: var(--status-down);
+      box-shadow: 0 0 8px var(--status-down);
+      animation: alertBlink 0.7s infinite;
+    }
+
+    @keyframes alertBlink {
+      50% { opacity: 0.2; }
+    }
+
+    .node-stat-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 3px;
+    }
+
+    .node-stat-num {
+      font-family: 'Chakra Petch', monospace;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .mini-meter {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .mini-meter-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    /* Node Hover Edit Controls (In Edit Mode) */
+    .node-edit-controls {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      display: none;
+      gap: 3px;
+      z-index: 30;
+    }
+
+    .body-edit-mode .node-edit-controls {
+      display: flex;
+    }
+
+    .node-ctrl-btn {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #090e1c;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+
+    .node-ctrl-btn:hover {
+      border-color: #00e5ff;
+      background: #00e5ff;
+      color: #000;
+    }
+
+    .node-ctrl-btn.btn-del:hover {
+      border-color: #ff3366;
+      background: #ff3366;
+      color: #fff;
+    }
+
+    .connecting-source {
+      outline: 2px dashed #f59e0b !important;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.9) !important;
+    }
+
+    /* =========================================================
+       5. CISCO CATALYST 8300 (C8300) E1 DETAILED INSPECTION MODAL
+       ========================================================= */
+    .c8300-modal-box {
+      background: #070d1e;
+      border: 1.5px solid #00f5a0;
+      box-shadow: 0 0 45px rgba(0, 245, 160, 0.4), 0 10px 40px rgba(0,0,0,0.9);
+      border-radius: 10px;
+      width: 1160px;
+      max-width: 95vw;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      color: #fff;
+    }
+
+    .c8300-modal-header {
+      padding: 16px 22px;
+      background: rgba(10, 20, 42, 0.85);
+      border-bottom: 1px solid rgba(0, 245, 160, 0.25);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .c8300-modal-body {
+      padding: 18px 22px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Chassis Card */
+    .c8300-chassis-card {
+      background: rgba(13, 22, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 8px;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+
+    .chassis-head-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 8px;
+    }
+
+    .chassis-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: #00f5a0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nim-module-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .nim-module-panel {
+      background: rgba(6, 11, 24, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nim-header {
+      font-family: 'Chakra Petch', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: #7dd3fc;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .ports-grid-8 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    /* E1 Port Jack */
+    .e1-port-jack {
+      background: #091224;
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-radius: 5px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .e1-port-jack:hover {
+      border-color: #00e5ff;
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .e1-port-jack.up {
+      border-color: rgba(0, 245, 160, 0.4);
+    }
+
+    .e1-port-jack.down {
+      border-color: #ff3366;
+      background: rgba(40, 10, 20, 0.6);
+      box-shadow: 0 0 10px rgba(255, 51, 102, 0.3);
+    }
+
+    .e1-port-jack.standby {
+      opacity: 0.55;
+    }
+
+    .port-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .port-id-label {
+      font-family: 'Chakra Petch', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+
+    .port-led {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .port-led.up {
+      background: #00f5a0;
+      box-shadow: 0 0 6px #00f5a0;
+    }
+
+    .port-led.down {
+      background: #ff3366;
+      box-shadow: 0 0 8px #ff3366;
+      animation: alertBlink 0.6s infinite;
+    }
+
+    .port-led.standby {
+      background: #64748b;
+    }
+
+    .port-carrier-tag {
+      font-size: 9px;
+      color: #94a3b8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .port-ch-meter {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'Chakra Petch', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      color: #00e5ff;
+    }
+
+    /* Unit filter tabs */
+    .c8300-tab-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .c8300-tab-btn {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #cbd5e1;
+      padding: 5px 12px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .c8300-tab-btn:hover, .c8300-tab-btn.active {
+      background: rgba(0, 245, 160, 0.2);
+      border-color: #00f5a0;
+      color: #00f5a0;
+    }
+
+    /* Diagnostics Drawer */
+    #port-diag-drawer {
+      background: rgba(4, 9, 20, 0.98);
+      border: 1px solid #00e5ff;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #7dd3fc;
+      line-height: 1.6;
+      display: none;
+    }
+
+    /* =========================================================
+       6. ZONE (배경 틀) DETAILED INSPECTOR MODAL
+       ========================================================= */
+    .zone-detail-modal-box {
+      background: #070d1e;
+      border: 1.5px solid #00e5ff;
+      box-shadow: 0 0 45px rgba(0, 229, 255, 0.4);
+      border-radius: 10px;
+      width: 780px;
+      max-width: 95vw;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 22px;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* =========================================================
+       7. HUD MODAL OVERLAY & POPUP STYLES (CENTERED FIXED DIALOGS)
+       ========================================================= */
+    .hud-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(8px);
+      display: none; /* Hidden by default */
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .hud-modal-box {
+      background: #070d1e;
+      border: 1.5px solid #00e5ff;
+      box-shadow: 0 0 35px rgba(0, 229, 255, 0.35), 0 10px 40px rgba(0, 0, 0, 0.9);
+      border-radius: 10px;
+      width: 480px;
+      max-width: 92vw;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      color: #fff;
+      box-sizing: border-box;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    .form-input {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      color: #f1f5f9;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .form-input:focus {
+      border-color: #00e5ff;
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+    }
+
+    .modal-btn-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .hud-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .hud-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #00e5ff;
+      box-shadow: 0 0 8px #00e5ff;
+      cursor: pointer;
+    }
+
+    .color-preset-pill {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+
+    .color-preset-pill:hover {
+      transform: scale(1.15);
+      border-color: #fff;
+    }
+
+    /* Toast */
+    #toast-msg {
+      position: fixed;
+      bottom: 50px;
+      right: 20px;
+      background: rgba(9, 14, 28, 0.95);
+      border: 1px solid #00f5a0;
+      color: #00f5a0;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 0 20px rgba(0, 245, 160, 0.4);
+      display: none;
+      z-index: 500;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. TOP HEADER -->
+  <header>
+    <div class="brand-section">
+      <div class="brand-icon-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+          <circle cx="12" cy="12" r="10" stroke-opacity="0.3"></circle>
+          <path d="M12 2a10 10 0 0 1 10 10"></path>
+          <path d="M8 12a4 4 0 0 1 8 0"></path>
+          <circle cx="12" cy="12" r="2" fill="#00e5ff"></circle>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-text-title">CISCO CUCM IPT INTEGRATED MONITORING WALLBOARD</div>
+        <div class="brand-text-sub">음성망 통합 관제 전광판 · 실시간 콜 트래픽 & E1 회선 상세 관제</div>
+      </div>
+    </div>
+
+    <!-- Center KPIs -->
+    <div class="kpi-section">
+      <div class="kpi-pill">
+        <span>📞</span>
+        <span class="kpi-pill-label">전체 활성 통화</span>
+        <span class="kpi-pill-val" id="kpi-total-calls" style="color: #00e5ff;">1,482 calls</span>
+      </div>
+
+      <div class="kpi-pill">
+        <span>📶</span>
+        <span class="kpi-pill-label">트렁크 상태</span>
+        <span class="kpi-pill-val" id="kpi-trunk-status" style="color: #00f5a0;">14 / 14 정상</span>
+      </div>
+
+      <div class="kpi-pill">
+        <span>⚡</span>
+        <span class="kpi-pill-label">호 처리량</span>
+        <span class="kpi-pill-val" id="kpi-cps" style="color: #f59e0b;">48.2 cps</span>
+      </div>
+
+      <div class="kpi-pill">
+        <span>💎</span>
+        <span class="kpi-pill-label">통화품질</span>
+        <span class="kpi-pill-val" id="kpi-mos" style="color: #a78bfa;">4.39 (우수)</span>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="controls-section">
+      <button class="hud-btn btn-edit-mode" id="btn-toggle-edit" onclick="toggleEditMode()">
+        🛠️ 토폴로지 편집 모드
+      </button>
+
+      <select class="hud-select" id="scenario-selector" onchange="changeScenario(this.value)">
+        <option value="normal">🟢 정상 운용 (Normal)</option>
+        <option value="surge">🟡 피크 통화량 폭주 (Surge)</option>
+        <option value="yeouido_down">🔴 여의도 ISP 장애 (Failover)</option>
+        <option value="hk_down">🔴 홍콩 SIP 트렁크 단선 (Fail)</option>
+      </select>
+
+      <button class="hud-btn" id="btn-sound" onclick="toggleSound()">
+        🔊 사운드: ON
+      </button>
+
+      <button class="hud-btn" onclick="toggleFullscreen()">
+        ⛶ 전체화면
+      </button>
+
+      <div class="clock-display" id="live-clock">2026-10-14 09:30:00</div>
+    </div>
+  </header>
+
+  <!-- 2. DRAGGABLE & FOLDABLE EDIT TOOLBAR -->
+  <div id="edit-toolbar">
+    <div class="toolbar-drag-handle" id="toolbar-drag-handle" title="마우스로 드래그하여 원하는 위치로 이동">
+      <span>⠿</span>
+      <span style="font-size:11px;">드래그</span>
+    </div>
+    <div class="toolbar-content" style="display: flex; align-items: center; gap: 6px;">
+      <button class="tool-btn" onclick="openAddNodeModal('cucm')">➕ CUCM 추가 (각진)</button>
+      <button class="tool-btn" onclick="openAddNodeModal('vg')">➕ VG 추가 (각 없는)</button>
+      <button class="tool-btn" onclick="openAddNodeModal('phone')">➕ 단말군 추가 (세모)</button>
+      <button class="tool-btn" onclick="openAddNodeModal('cloud')">➕ ISP 추가 (구름)</button>
+      <div class="tool-divider"></div>
+      <button class="tool-btn" onclick="openAddZoneModal()">➕ 배경 틀 추가</button>
+      <button class="tool-btn btn-connect" id="btn-tool-connect" onclick="toggleConnectTool()">🔗 회선 연결</button>
+      <div class="tool-divider"></div>
+      <button class="tool-btn" style="color: #a78bfa; border-color: rgba(167,139,250,0.5);" onclick="openThemeModal()">🎨 배경/테마 설정</button>
+      <button class="tool-btn" style="color: #00f5a0; border-color: rgba(0,245,160,0.5);" onclick="saveTopologyConfig()">💾 설정 저장</button>
+      <button class="tool-btn" style="color: #f87171;" onclick="resetToDefaultConfig()">🔄 기본값 복원</button>
+    </div>
+    <button class="tool-btn" id="btn-fold-toolbar" onclick="toggleFoldToolbar()" title="툴바 접기/펼치기" style="padding: 4px 6px;">▲</button>
+  </div>
+
+  <!-- 3. MAIN TOPOLOGY VIEWPORT -->
+  <div class="viewport-canvas" id="board">
+    
+    <!-- LAYER 1: Background HUD Zones Container (z-index: 1) -->
+    <div id="zones-container"></div>
+
+    <!-- LAYER 2: SVG TRUNK CONNECTIONS (z-index: 10) -->
+    <svg id="svg-connections">
+      <defs>
+        <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+
+        <marker id="arrow-cyan" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 10 5 L 0 9 z" fill="#00e5ff" opacity="0.85"/>
+        </marker>
+        <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 10 5 L 0 9 z" fill="#00f5a0" opacity="0.85"/>
+        </marker>
+        <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 10 5 L 0 9 z" fill="#c084fc" opacity="0.85"/>
+        </marker>
+        <marker id="arrow-down" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 10 5 L 0 9 z" fill="#ff3366" opacity="0.95"/>
+        </marker>
+      </defs>
+    </svg>
+
+    <!-- LAYER 3: CANVAS CALL FLOW PARTICLES (z-index: 12) -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- LAYER 4: MIDPOINT TRUNK BADGES (z-index: 15) -->
+    <div id="trunk-badges-layer"></div>
+
+    <!-- LAYER 5: DYNAMIC NODES CONTAINER (z-index: 20) -->
+    <div id="nodes-container"></div>
+
+  </div>
+
+
+
+  <!-- =========================================================
+       5. ADVANCED MODALS
+       ========================================================= -->
+
+  <!-- (A) CISCO CATALYST 8300 E1 HARDWARE PORT MATRIX MODAL -->
+  <div class="hud-modal-overlay" id="c8300-modal" onclick="if(event.target === this) closeAllModals()">
+    <div class="c8300-modal-box">
+      <div class="c8300-modal-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 32px; height: 32px; background: rgba(0, 245, 160, 0.15); border: 1px solid #00f5a0; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+            <span style="color: #00f5a0; font-weight: 900; font-size: 13px;">CISCO</span>
+          </div>
+          <div>
+            <div style="font-family: 'Chakra Petch', sans-serif; font-size: 16px; font-weight: 700; color: #00f5a0;" id="c8300-modal-title">
+              CISCO CATALYST 8300 VG POOL (6대) - 물리 섀시 및 E1 회선 포트 매트릭스
+            </div>
+            <div style="font-size: 11px; color: #94a3b8;" id="c8300-modal-subtitle">
+              김포 센터 수용 시설 · 1대당 NIM-8MFT-T1/E1 모듈 2개 (섀시당 16포트) 총 96포트 E1 국선/트렁크 실시간 관제
+            </div>
+          </div>
+        </div>
+        <button style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;" onclick="closeAllModals()">✕</button>
+      </div>
+
+      <div class="c8300-modal-body">
+        
+        <!-- Summary Stats Strip -->
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;">
+          <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius:6px; padding: 10px 12px;">
+            <div style="font-size: 11px; color: #94a3b8;">물리 섀시 현황</div>
+            <div style="font-family: 'Chakra Petch'; font-size: 16px; font-weight: 700; color: #00f5a0;">6대 가동 중 (6/6 UP)</div>
+          </div>
+          <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius:6px; padding: 10px 12px;">
+            <div style="font-size: 11px; color: #94a3b8;">장착 모듈 스펙</div>
+            <div style="font-family: 'Chakra Petch'; font-size: 16px; font-weight: 700; color: #00e5ff;">NIM-8MFT x 12개</div>
+          </div>
+          <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius:6px; padding: 10px 12px;">
+            <div style="font-size: 11px; color: #94a3b8;">E1 포트 연결 / 상태</div>
+            <div style="font-family: 'Chakra Petch'; font-size: 16px; font-weight: 700; color: #fff;">
+              <span style="color:#00f5a0;" id="e1-stat-up">72 UP</span> / <span style="color:#ff3366;" id="e1-stat-down">4 DOWN</span> <span style="font-size:12px; color:#94a3b8;">(총 96P)</span>
+            </div>
+          </div>
+          <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius:6px; padding: 10px 12px;">
+            <div style="font-size: 11px; color: #94a3b8;">활성 B-Channel 통화수</div>
+            <div style="font-family: 'Chakra Petch'; font-size: 16px; font-weight: 700; color: #f59e0b;" id="e1-stat-bch">1,420 / 2,160 ch</div>
+          </div>
+          <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius:6px; padding: 10px 12px;">
+            <div style="font-size: 11px; color: #94a3b8;">ISDN Q.921/Q.931 상태</div>
+            <div style="font-family: 'Chakra Petch'; font-size: 16px; font-weight: 700; color: #a78bfa;">L2 MULTIFRAME EST</div>
+          </div>
+        </div>
+
+        <!-- Router Unit Tabs -->
+        <div class="c8300-tab-bar">
+          <button class="c8300-tab-btn active" onclick="filterC8300Tab('all', this)">전체 6대 한눈에 보기</button>
+          <button class="c8300-tab-btn" onclick="filterC8300Tab('1', this)">VG-01 (C8300-01)</button>
+          <button class="c8300-tab-btn" onclick="filterC8300Tab('2', this)">VG-02 (C8300-02)</button>
+          <button class="c8300-tab-btn" onclick="filterC8300Tab('3', this)">VG-03 (C8300-03)</button>
+          <button class="c8300-tab-btn" onclick="filterC8300Tab('4', this)">VG-04 (C8300-04)</button>
+          <button class="c8300-tab-btn" onclick="filterC8300Tab('5', this)">VG-05 (C8300-05)</button>
+          <button class="c8300-tab-btn" onclick="filterC8300Tab('6', this)">VG-06 (C8300-06)</button>
+        </div>
+
+        <!-- Live Port Diagnostics Output Banner -->
+        <div id="port-diag-drawer">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+            <span style="font-weight:700; color:#00e5ff;" id="diag-port-title">Cisco IOS-XE E1 Diagnostics</span>
+            <button style="background:none; border:none; color:#94a3b8; cursor:pointer;" onclick="closeDiagDrawer()">✕ 닫기</button>
+          </div>
+          <div id="diag-port-content">포트 정보를 불러오는 중...</div>
+        </div>
+
+        <!-- 6 Routers Grid Container -->
+        <div id="c8300-chassis-container" style="display: flex; flex-direction: column; gap: 14px;"></div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- (B) ZONE (배경 틀) DETAILED DRILL-DOWN MODAL -->
+  <div class="hud-modal-overlay" id="zone-drilldown-modal" onclick="if(event.target === this) closeAllModals()">
+    <div class="zone-detail-modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 229, 255, 0.2); padding-bottom: 12px;">
+        <div>
+          <div style="font-family: 'Chakra Petch', sans-serif; font-size: 18px; font-weight: 700; color: #00e5ff;" id="zone-detail-title">구역 세부 관제 정보</div>
+          <div style="font-size: 11px; color: #94a3b8;" id="zone-detail-subtitle">해당 센터 틀(구역) 내 수용 장비 및 회선 통합 현황</div>
+        </div>
+        <button style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;" onclick="closeAllModals()">✕</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" id="zone-detail-kpis"></div>
+
+      <div>
+        <div style="font-size: 13px; font-weight: 700; color: #cbd5e1; margin-bottom: 8px;">소속 장비 및 노드 목록:</div>
+        <div id="zone-detail-nodelist" style="display: flex; flex-direction: column; gap: 6px;"></div>
+      </div>
+
+      <div id="zone-detail-c8300-shortcut" style="display: none; padding: 12px; background: rgba(0, 245, 160, 0.1); border: 1px solid rgba(0, 245, 160, 0.35); border-radius: 6px;">
+        <div style="font-weight: 700; color: #00f5a0; margin-bottom: 4px;">📡 Cisco Catalyst 8300 VG 1~6 (6대) E1 하드웨어 클러스터 탐지됨</div>
+        <div style="font-size: 11px; color: #cbd5e1; margin-bottom: 8px;">1대당 NIM-8MFT 모듈 2개 장착 (총 96포트 E1 회선 현황)을 포트별로 정밀 진단할 수 있습니다.</div>
+        <button class="hud-btn" style="background:#00f5a0; color:#061020; font-weight:700; border:none;" onclick="openC8300ModalFromZone()">
+          🔍 C8300 6대 E1 회선 & 포트 상태 매트릭스 열기
+        </button>
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="hud-btn" onclick="closeAllModals()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- (C) Node Add/Edit Modal -->
+  <div class="hud-modal-overlay" id="node-modal" onclick="if(event.target === this) closeAllModals()">
+    <div class="hud-modal-box">
+      <div style="font-size: 16px; font-weight: 700; color: #00e5ff;" id="node-modal-heading">노드 추가 / 편집</div>
+      <input type="hidden" id="edit-node-id">
+
+      <div class="form-group">
+        <label class="form-label">노드 형태 및 타입</label>
+        <select class="form-input" id="edit-node-type">
+          <option value="cucm">각진 사각형 (Cisco CUCM)</option>
+          <option value="vg">각 없는 사각형 (Voice Gateway / VG)</option>
+          <option value="phone">세모 (전화기 / 단말군)</option>
+          <option value="cloud">구름 (통신사 / ISP 회선)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">노드 명칭 (예: 부산 CUCM, VG 1~6, KT 회선)</label>
+        <input type="text" class="form-input" id="edit-node-name" placeholder="명칭 입력">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">서브 설명 / 활성 채널 (예: 인입 호: 420 ch, C8300 6대)</label>
+        <input type="text" class="form-input" id="edit-node-sub" placeholder="설명 문구">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">통화량 / 수용 채널 수 (호 흐름 애니메이션 기준)</label>
+        <input type="number" class="form-input" id="edit-node-calls" value="150">
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="hud-btn" onclick="closeAllModals()">취소</button>
+        <button class="hud-btn" style="background:#00e5ff; color:#000; border-color:#00e5ff;" onclick="confirmSaveNode()">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- (D) Zone Add/Edit Modal (with Color & Opacity Controls) -->
+  <div class="hud-modal-overlay" id="zone-modal" onclick="if(event.target === this) closeAllModals()">
+    <div class="hud-modal-box" style="width: 520px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,229,255,0.25); padding-bottom:12px;">
+        <div style="font-size: 16px; font-weight: 700; color: #00e5ff;" id="zone-modal-heading">배경 틀(구역) 스타일 및 속성 설정</div>
+        <button style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;" onclick="closeAllModals()">✕</button>
+      </div>
+      <input type="hidden" id="edit-zone-id">
+
+      <div class="form-group">
+        <label class="form-label">구역 명칭 (센터 / 클러스터 명)</label>
+        <input type="text" class="form-input" id="edit-zone-title" placeholder="센터 명칭 입력" oninput="updateZoneModalPreview()">
+      </div>
+
+      <!-- Color & Opacity Group -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px;">
+        
+        <!-- Frame / Border Color -->
+        <div class="form-group">
+          <label class="form-label">틀 테두리 / 모서리 색상</label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="color" id="edit-zone-border-color" value="#00e5ff" style="width: 38px; height: 34px; padding: 0; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; background: none; cursor: pointer;" oninput="updateZoneModalPreview()">
+            <input type="text" class="form-input" id="edit-zone-border-color-hex" value="#00e5ff" style="flex: 1;" oninput="syncHexToPicker('border', this.value)">
+          </div>
+          <div style="display: flex; gap: 4px; margin-top: 4px;">
+            <button type="button" class="color-preset-pill" style="background:#00e5ff;" onclick="setZoneBorderPreset('#00e5ff')" title="사이버 사이언"></button>
+            <button type="button" class="color-preset-pill" style="background:#00f5a0;" onclick="setZoneBorderPreset('#00f5a0')" title="에메랄드 그린"></button>
+            <button type="button" class="color-preset-pill" style="background:#a78bfa;" onclick="setZoneBorderPreset('#a78bfa')" title="바이올렛 퍼플"></button>
+            <button type="button" class="color-preset-pill" style="background:#f59e0b;" onclick="setZoneBorderPreset('#f59e0b')" title="앰버 오렌지"></button>
+            <button type="button" class="color-preset-pill" style="background:#38bdf8;" onclick="setZoneBorderPreset('#38bdf8')" title="스카이 블루"></button>
+            <button type="button" class="color-preset-pill" style="background:#ff3366;" onclick="setZoneBorderPreset('#ff3366')" title="크림슨 레드"></button>
+          </div>
+        </div>
+
+        <!-- Frame Background Color -->
+        <div class="form-group">
+          <label class="form-label">틀 내부 배경색</label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="color" id="edit-zone-bg-color" value="#080e1c" style="width: 38px; height: 34px; padding: 0; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; background: none; cursor: pointer;" oninput="updateZoneModalPreview()">
+            <input type="text" class="form-input" id="edit-zone-bg-color-hex" value="#080e1c" style="flex: 1;" oninput="syncHexToPicker('bg', this.value)">
+          </div>
+          <div style="display: flex; gap: 4px; margin-top: 4px;">
+            <button type="button" class="color-preset-pill" style="background:#080e1c;" onclick="setZoneBgPreset('#080e1c')" title="딥 다크 네이비"></button>
+            <button type="button" class="color-preset-pill" style="background:#030712;" onclick="setZoneBgPreset('#030712')" title="나이트 블랙"></button>
+            <button type="button" class="color-preset-pill" style="background:#04281e;" onclick="setZoneBgPreset('#04281e')" title="딥 에메랄드"></button>
+            <button type="button" class="color-preset-pill" style="background:#1c1438;" onclick="setZoneBgPreset('#1c1438')" title="딥 퍼플"></button>
+            <button type="button" class="color-preset-pill" style="background:#0f172a;" onclick="setZoneBgPreset('#0f172a')" title="슬레이트 네이비"></button>
+            <button type="button" class="color-preset-pill" style="background:#000000;" onclick="setZoneBgPreset('#000000')" title="순수 블랙"></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Opacity Sliders -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px;">
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between;">
+            <label class="form-label">틀 배경 투명도 (Fill Opacity)</label>
+            <span style="font-family:'Chakra Petch'; font-size:11px; color:#00e5ff; font-weight:700;" id="edit-zone-bg-opacity-val">45%</span>
+          </div>
+          <input type="range" min="0" max="100" value="45" class="hud-slider" id="edit-zone-bg-opacity" oninput="updateZoneModalPreview()">
+        </div>
+
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between;">
+            <label class="form-label">틀 테두리 투명도 (Border Opacity)</label>
+            <span style="font-family:'Chakra Petch'; font-size:11px; color:#00e5ff; font-weight:700;" id="edit-zone-border-opacity-val">60%</span>
+          </div>
+          <input type="range" min="10" max="100" value="60" class="hud-slider" id="edit-zone-border-opacity" oninput="updateZoneModalPreview()">
+        </div>
+      </div>
+
+      <!-- Real-time Live Preview Box -->
+      <div class="form-group" style="margin-top: 4px;">
+        <label class="form-label">실시간 스타일 미리보기</label>
+        <div id="zone-modal-preview-box" style="height: 64px; border-radius: 8px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: all 0.15s ease;">
+          <div id="zone-modal-preview-tag" style="position: absolute; top: 6px; left: 12px; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; display: flex; align-items: center; gap: 5px;">
+            <span id="zone-modal-preview-dot" style="width: 5px; height: 5px; border-radius: 50%;"></span>
+            <span id="zone-modal-preview-tag-text">미리보기</span>
+          </div>
+          <span style="font-size: 11px; color: #94a3b8;">배경 투명도 및 테두리 색상 실시간 반영</span>
+        </div>
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="hud-btn" onclick="closeAllModals()">취소</button>
+        <button class="hud-btn" style="background:#00e5ff; color:#000; border-color:#00e5ff; font-weight:700;" onclick="confirmSaveZone()">💾 틀 스타일 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- (E) Global Dashboard Theme Modal -->
+  <div class="hud-modal-overlay" id="theme-modal" onclick="if(event.target === this) closeAllModals()">
+    <div class="hud-modal-box" style="width: 500px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,229,255,0.25); padding-bottom:12px;">
+        <div style="font-size: 16px; font-weight: 700; color: #00e5ff;">전광판 전체 배경 & 테마 설정</div>
+        <button style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;" onclick="closeAllModals()">✕</button>
+      </div>
+
+      <!-- Canvas Background Color -->
+      <div class="form-group">
+        <label class="form-label">전광판 전체 배경색 (Canvas Background)</label>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="color" id="edit-theme-canvas-bg" value="#050811" style="width: 38px; height: 34px; padding: 0; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; background: none; cursor: pointer;" oninput="updateThemeModalLive()">
+          <input type="text" class="form-input" id="edit-theme-canvas-bg-hex" value="#050811" style="flex: 1;" oninput="syncThemeHex(this.value)">
+        </div>
+        <div style="display: flex; gap: 5px; margin-top: 5px;">
+          <button type="button" class="color-preset-pill" style="background:#050811;" onclick="setThemeCanvasPreset('#050811')" title="기본 사이버 다크"></button>
+          <button type="button" class="color-preset-pill" style="background:#000000;" onclick="setThemeCanvasPreset('#000000')" title="트루 블랙 (OLED용)"></button>
+          <button type="button" class="color-preset-pill" style="background:#081026;" onclick="setThemeCanvasPreset('#081026')" title="딥 네이비"></button>
+          <button type="button" class="color-preset-pill" style="background:#03151e;" onclick="setThemeCanvasPreset('#03151e')" title="딥 틸 그린"></button>
+          <button type="button" class="color-preset-pill" style="background:#130b24;" onclick="setThemeCanvasPreset('#130b24')" title="딥 스페이스 퍼플"></button>
+        </div>
+      </div>
+
+      <!-- Grid Opacity Slider -->
+      <div class="form-group" style="margin-top: 4px;">
+        <div style="display:flex; justify-content:space-between;">
+          <label class="form-label">사이버 격자 그리드 강도 (Grid Opacity)</label>
+          <span style="font-family:'Chakra Petch'; font-size:11px; color:#00e5ff; font-weight:700;" id="edit-theme-grid-opacity-val">35%</span>
+        </div>
+        <input type="range" min="0" max="100" value="35" class="hud-slider" id="edit-theme-grid-opacity" oninput="updateThemeModalLive()">
+      </div>
+
+      <!-- Ambient Glow Slider -->
+      <div class="form-group" style="margin-top: 4px;">
+        <div style="display:flex; justify-content:space-between;">
+          <label class="form-label">중앙 네온 앰비언트 글로우 강도 (Radial Glow)</label>
+          <span style="font-family:'Chakra Petch'; font-size:11px; color:#00e5ff; font-weight:700;" id="edit-theme-glow-opacity-val">12%</span>
+        </div>
+        <input type="range" min="0" max="100" value="12" class="hud-slider" id="edit-theme-glow-opacity" oninput="updateThemeModalLive()">
+      </div>
+
+      <!-- Batch Apply to All Zones -->
+      <div style="padding: 12px; background: rgba(0, 229, 255, 0.08); border: 1px dashed rgba(0, 229, 255, 0.35); border-radius: 6px; margin-top: 6px;">
+        <div style="font-size: 11px; color: #cbd5e1; margin-bottom: 8px;">
+          💡 현재 테마 설정을 바탕으로 <strong>모든 배경 틀(구역)</strong>에 동일한 색상/투명도를 일괄 적용할 수 있습니다.
+        </div>
+        <button type="button" class="hud-btn" style="width: 100%; justify-content: center; background: rgba(0,229,255,0.15); border-color:#00e5ff; color:#00e5ff;" onclick="applyThemeToAllZones()">
+          ⚡ 모든 배경 틀(구역)에 스타일 일괄 적용
+        </button>
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="hud-btn" onclick="closeAllModals()">취소</button>
+        <button class="hud-btn" style="background:#00e5ff; color:#000; border-color:#00e5ff; font-weight:700;" onclick="confirmSaveTheme()">💾 테마 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- (E) Trunk Edit/Delete Modal -->
+  <div class="hud-modal-overlay" id="trunk-modal" onclick="if(event.target === this) closeAllModals()">
+    <div class="hud-modal-box">
+      <div style="font-size: 16px; font-weight: 700; color: #00e5ff;">회선(트렁크) 설정</div>
+      <input type="hidden" id="edit-trunk-id">
+      <div id="trunk-modal-endpoints" style="font-size: 12px; color: #cbd5e1; margin-bottom: 6px;"></div>
+
+      <div class="form-group">
+        <label class="form-label">활성 통화량 (호 수)</label>
+        <input type="number" class="form-input" id="edit-trunk-calls">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">회선 상태</label>
+        <select class="form-input" id="edit-trunk-status">
+          <option value="UP">UP (정상 가동)</option>
+          <option value="DOWN">DOWN (회선 단선 / 장애)</option>
+        </select>
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="hud-btn" style="color: #ff3366; border-color: rgba(255,51,102,0.4);" onclick="deleteSelectedTrunk()">🗑️ 회선 삭제</button>
+        <button class="hud-btn" onclick="closeAllModals()">취소</button>
+        <button class="hud-btn" style="background:#00e5ff; color:#000; border-color:#00e5ff;" onclick="confirmSaveTrunk()">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast-msg">알림 메시지</div>
+
+  <!-- =========================================================
+       7. JAVASCRIPT ENGINE & CISCO C8300 PORT DATA
+       ========================================================= -->
+  <script>
+    // 6 Cisco Catalyst 8300 Gateways Data Generator
+    // 6 Routers x 2 NIM-8MFT Modules x 8 Ports = 96 E1 Ports!
+    function generateC8300Data(dcName) {
+      const routers = [];
+      const carriers = ['KT 국선', 'SKB 국선', 'LGU+ 국선', 'KT 백업'];
+
+      for (let r = 1; r <= 6; r++) {
+        const routerId = `C8300-${dcName.toUpperCase()}-VG0${r}`;
+        const ip = dcName === 'gimpo' ? `10.120.10.${10 + r}` : `10.130.10.${10 + r}`;
+        const cpu = 20 + (r * 4);
+        const temp = 36 + (r % 4);
+
+        const modules = [];
+
+        for (let m = 1; m <= 2; m++) {
+          const modName = `Slot 0/${m}: NIM-8MFT-T1/E1 (8 Ports)`;
+          const ports = [];
+
+          for (let p = 0; p < 8; p++) {
+            const portName = `0/${m}/${p}`;
+            const carrier = carriers[(r + m + p) % carriers.length] + `-${String(p+1).padStart(2,'0')}`;
+            
+            // Deliberately simulate realistic port statuses
+            let status = 'UP';
+            let activeCh = Math.floor(18 + Math.random() * 12); // out of 30
+            let alarm = 'None';
+
+            if ((r === 2 && m === 1 && p === 5) || (r === 5 && m === 2 && p === 2)) {
+              status = 'DOWN';
+              activeCh = 0;
+              alarm = 'Red Alarm (Loss of Signal / LOS)';
+            } else if (p === 7 && m === 2) {
+              status = 'STANDBY';
+              activeCh = 0;
+              alarm = 'Standby (Pre-allocated)';
+            }
+
+            ports.push({
+              port: portName,
+              carrier: carrier,
+              status: status,
+              activeCh: activeCh,
+              totalCh: 30,
+              alarm: alarm,
+              framing: 'CRC4',
+              lineCode: 'HDB3',
+              dChannel: status === 'UP' ? 'MULTIFRAME_ESTABLISHED' : 'TEI_UNASSIGNED'
+            });
+          }
+
+          modules.push({ slot: `0/${m}`, name: modName, ports: ports });
+        }
+
+        routers.push({
+          id: routerId,
+          num: r,
+          ip: ip,
+          cpu: cpu,
+          temp: temp,
+          status: 'UP',
+          modules: modules
+        });
+      }
+      return routers;
+    }
+
+    let c8300GimpoData = generateC8300Data('gimpo');
+    let c8300YeouidoData = generateC8300Data('yeouido');
+    let currentSelectedDC = 'gimpo';
+    let currentDrillZoneId = null;
+
+    // Helper: Hex color + Opacity to RGBA
+    function hexToRgba(hex, alpha = 1) {
+      if (!hex) return `rgba(8, 14, 28, ${alpha})`;
+      if (hex.startsWith('rgba')) return hex;
+      if (hex.startsWith('rgb')) {
+        return hex.replace('rgb', 'rgba').replace(')', `, ${alpha})`);
+      }
+      hex = hex.replace('#', '');
+      if (hex.length === 3) {
+        hex = hex.split('').map(c => c + c).join('');
+      }
+      const r = parseInt(hex.substring(0, 2), 16) || 0;
+      const g = parseInt(hex.substring(2, 4), 16) || 0;
+      const b = parseInt(hex.substring(4, 6), 16) || 0;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    // DEFAULT INITIAL TOPOLOGY CONFIGURATION (LATEST REFINED BASELINE)
+    const DEFAULT_CONFIG = {
+      theme: {
+        canvasBg: '#050811',
+        gridOpacity: 35,
+        glowOpacity: 12
+      },
+      zones: [
+        { id: 'zone-gimpo', title: '김포 센터 (GIMPO CENTER)', x: 20, y: 15, width: 620, height: 260, borderColor: '#00e5ff', borderOpacity: 0.35, bgColor: '#080e1c', bgOpacity: 0.45 },
+        { id: 'zone-yeouido', title: '여의도 센터 (YEOUIDO CENTER)', x: 660, y: 15, width: 446, height: 269, borderColor: '#00e5ff', borderOpacity: 0.35, bgColor: '#080e1c', bgOpacity: 0.45 },
+        { id: 'zone-core', title: '국내 코어 클러스터 (DOMESTIC CUCM CORE)', x: 28, y: 293, width: 1037, height: 326, borderColor: '#00e5ff', borderOpacity: 0.35, bgColor: '#080e1c', bgOpacity: 0.45 },
+        { id: 'zone-overseas', title: '국외 SIP (GLOBAL)', x: 1120, y: 15, width: 280, height: 765, borderColor: '#00e5ff', borderOpacity: 0.35, bgColor: '#080e1c', bgOpacity: 0.45 },
+        { id: 'zone_1791940182331', title: '사용자 망', x: 61, y: 633, width: 962, height: 141, borderColor: '#00e5ff', borderOpacity: 0.35, bgColor: '#080e1c', bgOpacity: 0.45 }
+      ],
+      nodes: [
+        { id: 'node-gimpo-other', type: 'cloud', name: 'OTHER', sub: '전용선 / 외곽망 연계', calls: 142, status: 'UP', x: 80, y: 45 },
+        { id: 'node-gimpo-isp', type: 'cloud', name: 'ISP', sub: '국선 E1 / SIP 인입', calls: 520, status: 'UP', x: 380, y: 45 },
+        { id: 'node-oversea', type: 'vg', name: 'OVER SEA', sub: 'Active: 48', calls: 48, status: 'UP', x: 48, y: 176 },
+        { id: 'node-smevg', type: 'vg', name: 'SMEVG', sub: 'Ch 사용률: 60%', calls: 180, status: 'UP', x: 235, y: 175 },
+        { id: 'node-gimpo-vg', type: 'vg', name: 'VG1 ~ 6', sub: '인입 호: 420 ch', calls: 420, status: 'UP', x: 425, y: 175 },
+        { id: 'node-yeouido-isp', type: 'cloud', name: 'ISP', sub: '국선 E1 백업/분산', calls: 310, status: 'UP', x: 665, y: 49 },
+        { id: 'node-yeouido-vg', type: 'vg', name: 'VG1 ~ 6', sub: '인입 호: 310 ch', calls: 310, status: 'UP', x: 689, y: 175 },
+        { id: 'node_1791934986777', type: 'vg', name: 'VG 7~10', sub: 'Active: 100', calls: 100, status: 'UP', x: 952.568, y: 180.62 },
+        { id: 'node-sme', type: 'cucm', name: 'SME', sub: '중앙 통화: 980 calls', calls: 980, status: 'UP', x: 286, y: 363 },
+        { id: 'node-hq', type: 'cucm', name: 'HQ', sub: '내선 통화량: 320 calls', calls: 320, status: 'UP', x: 712, y: 362 },
+        { id: 'node-sales2', type: 'cucm', name: '영업2', sub: '통화량: 380 calls', calls: 380, status: 'UP', x: 128, y: 486 },
+        { id: 'node-sales1', type: 'cucm', name: '영업1', sub: '통화량: 480 calls', calls: 480, status: 'UP', x: 869, y: 521 },
+        { id: 'node_1791940364823', type: 'cucm', name: '호치민', sub: '호치민 CME', calls: 3, status: 'UP', x: 1179.775, y: 288.939 },
+        { id: 'node-hk', type: 'cucm', name: '홍콩', sub: '34 calls (42ms)', calls: 34, status: 'UP', x: 1178, y: 399 },
+        { id: 'node-ny', type: 'cucm', name: '뉴욕', sub: '22 calls (168ms)', calls: 22, status: 'UP', x: 1175, y: 520 },
+        { id: 'node-phone2', type: 'phone', name: '영업 2 단말군', sub: '740대 (99.7%)', calls: 380, status: 'UP', x: 230, y: 665 },
+        { id: 'node_1791940120061', type: 'phone', name: '본부 전화기', sub: 'Active: 100', calls: 100, status: 'UP', x: 537.201, y: 670.948 },
+        { id: 'node-phone1', type: 'phone', name: '영업 1 단말군', sub: '920대 (99.5%)', calls: 480, status: 'UP', x: 844, y: 669 }
+      ],
+      trunks: [
+        { id: 't_gimpo_other_smevg', from: 'node-gimpo-other', to: 'node-smevg', type: 'inbound', calls: 142, status: 'UP' },
+        { id: 't_oversea_smevg', from: 'node-oversea', to: 'node-smevg', type: 'core', calls: 48, status: 'UP' },
+        { id: 't_gimpo_isp_vg', from: 'node-gimpo-isp', to: 'node-gimpo-vg', type: 'inbound', calls: 420, status: 'UP' },
+        { id: 't_yeouido_isp_vg', from: 'node-yeouido-isp', to: 'node-yeouido-vg', type: 'inbound', calls: 310, status: 'UP' },
+        { id: 't_node-yeouido-vg_node_1791934986777_1791935098137', from: 'node-yeouido-vg', to: 'node_1791934986777', type: 'core', calls: 120, status: 'UP' },
+        { id: 't_smevg_sme', from: 'node-smevg', to: 'node-sme', type: 'core', calls: 180, status: 'UP' },
+        { id: 't_gimpo_vg_sme', from: 'node-gimpo-vg', to: 'node-sme', type: 'core', calls: 420, status: 'UP' },
+        { id: 't_yeouido_vg_sme', from: 'node-yeouido-vg', to: 'node-sme', type: 'core', calls: 310, status: 'UP' },
+        { id: 't_sme_hq', from: 'node-sme', to: 'node-hq', type: 'core', calls: 120, status: 'UP' },
+        { id: 't_sme_sales2', from: 'node-sme', to: 'node-sales2', type: 'branch', calls: 380, status: 'UP' },
+        { id: 't_sme_sales1', from: 'node-sme', to: 'node-sales1', type: 'branch', calls: 480, status: 'UP' },
+        { id: 't_sales2_phone2', from: 'node-sales2', to: 'node-phone2', type: 'phone', calls: 380, status: 'UP' },
+        { id: 't_node-hq_node_1791940120061_1791940127736', from: 'node-hq', to: 'node_1791940120061', type: 'core', calls: 60, status: 'UP' },
+        { id: 't_sales1_phone1', from: 'node-sales1', to: 'node-phone1', type: 'phone', calls: 480, status: 'UP' },
+        { id: 't_node-hq_node_1791940364823_1791940373661', from: 'node-hq', to: 'node_1791940364823', type: 'core', calls: 34, status: 'UP' },
+        { id: 't_sales1_hk', from: 'node-sales1', to: 'node-hk', type: 'overseas', calls: 34, status: 'UP' },
+        { id: 't_sales1_ny', from: 'node-sales1', to: 'node-ny', type: 'overseas', calls: 22, status: 'UP' }
+      ]
+    };
+
+    let currentConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    let isEditMode = false;
+    let isConnectingTrunk = false;
+    let connectSourceNodeId = null;
+
+    let currentScenario = 'normal';
+    let simulationMultiplier = 1.0;
+
+    // DOM Elements
+    const board = document.getElementById('board');
+    const zonesContainer = document.getElementById('zones-container');
+    const nodesContainer = document.getElementById('nodes-container');
+    const svgConnections = document.getElementById('svg-connections');
+    const badgesLayer = document.getElementById('trunk-badges-layer');
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    const editToolbar = document.getElementById('edit-toolbar');
+
+    let particles = [];
+    let pathMap = {};
+
+    // -------------------------------------------------------------
+    // DRAGGABLE TOOLBAR LOGIC
+    // -------------------------------------------------------------
+    function setupDraggableToolbar() {
+      const handle = document.getElementById('toolbar-drag-handle');
+      let isDragging = false;
+      let startX, startY, origLeft, origTop;
+
+      handle.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = editToolbar.getBoundingClientRect();
+        origLeft = rect.left;
+        origTop = rect.top;
+
+        const onMouseMove = (moveEvent) => {
+          if (!isDragging) return;
+          const dx = moveEvent.clientX - startX;
+          const dy = moveEvent.clientY - startY;
+          editToolbar.style.left = `${Math.max(10, origLeft + dx)}px`;
+          editToolbar.style.top = `${Math.max(60, origTop + dy)}px`;
+        };
+
+        const onMouseUp = () => {
+          isDragging = false;
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    function toggleFoldToolbar() {
+      editToolbar.classList.toggle('folded');
+      const btn = document.getElementById('btn-fold-toolbar');
+      btn.innerText = editToolbar.classList.contains('folded') ? '▼ 펼치기' : '▲';
+    }
+
+    // -------------------------------------------------------------
+    // INITIALIZATION & CONFIG
+    // -------------------------------------------------------------
+    function loadSavedConfig() {
+      const local = localStorage.getItem('cucm_wallboard_config');
+      if (local) {
+        try {
+          currentConfig = JSON.parse(local);
+          if (currentConfig.theme) applyGlobalTheme(currentConfig.theme);
+          showToast('저장된 사용자 구성을 불러왔습니다.');
+        } catch(e) {
+          currentConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        }
+      }
+      fetch('/api/config')
+        .then(r => r.json())
+        .then(res => {
+          if (res.status === 'ok' && res.config) {
+            currentConfig = res.config;
+            if (currentConfig.theme) applyGlobalTheme(currentConfig.theme);
+            renderAll();
+          }
+        }).catch(() => {});
+    }
+
+    function saveTopologyConfig() {
+      localStorage.setItem('cucm_wallboard_config', JSON.stringify(currentConfig));
+      fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentConfig)
+      }).catch(() => {});
+      showToast('✅ 토폴로지 구성 및 스타일이 저장되었습니다.');
+    }
+
+    function resetToDefaultConfig() {
+      if (confirm('기본 토폴로지 구성 및 스타일로 초기화하시겠습니까? (사용자 수정 내용이 리셋됩니다)')) {
+        localStorage.removeItem('cucm_wallboard_config');
+        currentConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        if (currentConfig.theme) applyGlobalTheme(currentConfig.theme);
+        renderAll();
+        saveTopologyConfig();
+        showToast('🔄 기본 구성으로 복원되었습니다.');
+      }
+    }
+
+    // -------------------------------------------------------------
+    // RENDERING ZONES, NODES, TRUNKS
+    // -------------------------------------------------------------
+    function renderAll() {
+      renderZones();
+      renderNodes();
+      updateTrunkLines();
+    }
+
+    function renderZones() {
+      zonesContainer.innerHTML = '';
+      currentConfig.zones.forEach(z => {
+        const div = document.createElement('div');
+        div.className = 'hud-zone';
+        div.id = z.id;
+        div.style.left = `${z.x}px`;
+        div.style.top = `${z.y}px`;
+        div.style.width = `${z.width}px`;
+        div.style.height = `${z.height}px`;
+
+        const bColor = z.borderColor || '#00e5ff';
+        const bOpacity = (z.borderOpacity !== undefined) ? z.borderOpacity : 0.35;
+        const bgColor = z.bgColor || '#080e1c';
+        const bgOpacity = (z.bgOpacity !== undefined) ? z.bgOpacity : 0.45;
+
+        div.style.setProperty('--hud-corner', bColor);
+        div.style.setProperty('--hud-border', hexToRgba(bColor, bOpacity));
+        div.style.setProperty('--tag-dot', bColor);
+        div.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
+        div.style.borderColor = hexToRgba(bColor, bOpacity);
+
+        div.innerHTML = `
+          <div class="hud-zone-tag" id="tag-${z.id}" style="border-color:${hexToRgba(bColor, 0.5)}; color:${bColor};" onclick="handleZoneClick('${z.id}', event)">
+            ${z.title}
+            <span style="font-size:9px; background:rgba(0,229,255,0.15); padding:1px 5px; border-radius:3px; margin-left:4px;">🔍 세부관제</span>
+          </div>
+          <div class="zone-actions">
+            <button class="zone-action-btn" onclick="openEditZoneModal('${z.id}')">🎨 스타일/수정</button>
+            <button class="zone-action-btn" style="color:#ff3366;" onclick="deleteZone('${z.id}')">✕ 삭제</button>
+          </div>
+          <div class="zone-resize-handle" data-zone="${z.id}" style="border-color:${bColor};"></div>
+        `;
+
+        div.onclick = (e) => {
+          if (!isEditMode) handleZoneClick(z.id, e);
+        };
+
+        setupZoneDrag(div, z);
+        zonesContainer.appendChild(div);
+      });
+    }
+
+    function renderNodes() {
+      nodesContainer.innerHTML = '';
+      currentConfig.nodes.forEach(n => {
+        const div = document.createElement('div');
+        div.className = `node-base node-${n.type}`;
+        div.id = n.id;
+        div.style.left = `${n.x}px`;
+        div.style.top = `${n.y}px`;
+
+        let innerContent = '';
+        const isUp = n.status !== 'DOWN';
+        const ledClass = isUp ? 'up' : 'down';
+
+        if (n.type === 'cucm') {
+          innerContent = `
+            <div class="node-head-row">
+              <span class="node-badge-tag tag-cucm">CUCM</span>
+              <span class="status-light"><span class="led-dot ${ledClass}"></span>${n.status}</span>
+            </div>
+            <div class="node-title-text">${n.name}</div>
+            <div class="node-stat-line">
+              <span>${n.sub || '통화량:'}</span>
+              <span class="node-stat-num">${n.calls} calls</span>
+            </div>
+            <div class="mini-meter">
+              <div class="mini-meter-fill" style="width: 55%; background: #00e5ff;"></div>
+            </div>
+          `;
+        } else if (n.type === 'vg') {
+          innerContent = `
+            <div class="node-head-row">
+              <span class="node-badge-tag tag-vg">VG Pool</span>
+              <span class="status-light"><span class="led-dot ${ledClass}"></span>${n.status}</span>
+            </div>
+            <div class="node-title-text" style="color: #00f5a0;">${n.name}</div>
+            <div class="node-stat-line">
+              <span>${n.sub || 'C8300 6대'}</span>
+              <span class="node-stat-num" style="color:#00f5a0;">${n.calls} ch</span>
+            </div>
+            <div class="mini-meter">
+              <div class="mini-meter-fill" style="width: 72%; background: #00f5a0;"></div>
+            </div>
+          `;
+        } else if (n.type === 'cloud') {
+          innerContent = `
+            <div class="node-head-row" style="width:100%;">
+              <span class="node-title-text" style="color: #c4b5fd;">☁️ ${n.name}</span>
+              <span class="status-light"><span class="led-dot ${ledClass}"></span>${n.status}</span>
+            </div>
+            <div style="font-size: 10px; color: #cbd5e1; margin-top: 2px;">${n.sub || '국선 회선'}</div>
+          `;
+        } else if (n.type === 'phone') {
+          innerContent = `
+            <div class="triangle-poly">
+              <svg class="triangle-svg-bg" viewBox="0 0 100 86">
+                <polygon points="50,4 96,82 4,82" fill="rgba(245, 158, 11, 0.18)" stroke="#f59e0b" stroke-width="2.5" stroke-linejoin="round"/>
+              </svg>
+              <div class="triangle-inner-info">
+                <svg viewBox="0 0 24 24"><path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.24 1.02l-2.21 2.2z"/></svg>
+                <div class="triangle-count">${n.calls}대</div>
+              </div>
+            </div>
+            <div class="phone-sub-caption">${n.name}</div>
+          `;
+        }
+
+        div.innerHTML = `
+          ${innerContent}
+          <div class="node-edit-controls">
+            <button class="node-ctrl-btn" onclick="openEditNodeModal('${n.id}', event)">✎</button>
+            <button class="node-ctrl-btn btn-del" onclick="deleteNode('${n.id}', event)">✕</button>
+          </div>
+        `;
+
+        div.onclick = (e) => handleNodeClick(n.id, e);
+        setupNodeDrag(div, n);
+        nodesContainer.appendChild(div);
+      });
+    }
+
+    // Drag & Drop Nodes
+    function setupNodeDrag(el, nodeData) {
+      let isDragging = false;
+      let startX, startY, origX, origY;
+
+      el.addEventListener('mousedown', (e) => {
+        if (!isEditMode) return;
+        if (e.target.closest('.node-ctrl-btn')) return;
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        origX = nodeData.x;
+        origY = nodeData.y;
+        el.style.zIndex = 40;
+
+        const onMouseMove = (moveEvent) => {
+          if (!isDragging) return;
+          nodeData.x = Math.max(10, origX + (moveEvent.clientX - startX));
+          nodeData.y = Math.max(10, origY + (moveEvent.clientY - startY));
+          el.style.left = `${nodeData.x}px`;
+          el.style.top = `${nodeData.y}px`;
+          updateTrunkLines();
+        };
+
+        const onMouseUp = () => {
+          isDragging = false;
+          el.style.zIndex = 20;
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    // Drag & Drop Zones
+    function setupZoneDrag(el, zoneData) {
+      let isDragging = false;
+      let isResizing = false;
+      let startX, startY, origX, origY, origW, origH;
+
+      el.addEventListener('mousedown', (e) => {
+        if (!isEditMode) return;
+        if (e.target.closest('.zone-action-btn')) return;
+
+        if (e.target.classList.contains('zone-resize-handle')) {
+          isResizing = true;
+        } else {
+          isDragging = true;
+        }
+
+        startX = e.clientX;
+        startY = e.clientY;
+        origX = zoneData.x;
+        origY = zoneData.y;
+        origW = zoneData.width;
+        origH = zoneData.height;
+
+        const onMouseMove = (moveEvent) => {
+          const dx = moveEvent.clientX - startX;
+          const dy = moveEvent.clientY - startY;
+
+          if (isDragging) {
+            zoneData.x = Math.max(0, origX + dx);
+            zoneData.y = Math.max(0, origY + dy);
+            el.style.left = `${zoneData.x}px`;
+            el.style.top = `${zoneData.y}px`;
+          } else if (isResizing) {
+            zoneData.width = Math.max(160, origW + dx);
+            zoneData.height = Math.max(120, origH + dy);
+            el.style.width = `${zoneData.width}px`;
+            el.style.height = `${zoneData.height}px`;
+          }
+        };
+
+        const onMouseUp = () => {
+          isDragging = false;
+          isResizing = false;
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    // -------------------------------------------------------------
+    // TRUNK CONNECTIONS & PARTICLES
+    // -------------------------------------------------------------
+    function getNodeAnchor(elementId) {
+      const el = document.getElementById(elementId);
+      if (!el) return { x: 0, y: 0, w: 0, h: 0 };
+      const elRect = el.getBoundingClientRect();
+      const boardRect = board.getBoundingClientRect();
+      return {
+        x: (elRect.left - boardRect.left) + elRect.width / 2,
+        y: (elRect.top - boardRect.top) + elRect.height / 2,
+        w: elRect.width,
+        h: elRect.height,
+        left: elRect.left - boardRect.left,
+        top: elRect.top - boardRect.top
+      };
+    }
+
+    function updateTrunkLines() {
+      const defs = svgConnections.querySelector('defs');
+      svgConnections.innerHTML = '';
+      if (defs) svgConnections.appendChild(defs);
+      badgesLayer.innerHTML = '';
+      pathMap = {};
+
+      currentConfig.trunks.forEach(t => {
+        const fromNode = currentConfig.nodes.find(n => n.id === t.from);
+        const toNode = currentConfig.nodes.find(n => n.id === t.to);
+        if (!fromNode || !toNode) return;
+
+        const a1 = getNodeAnchor(t.from);
+        const a2 = getNodeAnchor(t.to);
+
+        const dx = a2.x - a1.x;
+        const dy = a2.y - a1.y;
+
+        let p1 = { x: a1.x, y: a1.y };
+        let p2 = { x: a2.x, y: a2.y };
+
+        if (Math.abs(dy) > Math.abs(dx)) {
+          p1.y = dy > 0 ? a1.top + a1.h : a1.top;
+          p2.y = dy > 0 ? a2.top : a2.top + a2.h;
+        } else {
+          p1.x = dx > 0 ? a1.left + a1.w : a1.left;
+          p2.x = dx > 0 ? a2.left : a2.left + a2.w;
+        }
+
+        const isDown = t.status === 'DOWN';
+        let strokeColor = '#00e5ff';
+        let marker = 'url(#arrow-cyan)';
+
+        if (isDown) {
+          strokeColor = '#ff3366';
+          marker = 'url(#arrow-down)';
+        } else if (t.type === 'core') {
+          strokeColor = '#00f5a0';
+          marker = 'url(#arrow-green)';
+        } else if (t.type === 'overseas') {
+          strokeColor = '#c084fc';
+          marker = 'url(#arrow-purple)';
+        } else if (t.type === 'phone') {
+          strokeColor = '#f59e0b';
+        }
+
+        let d = '';
+        if (Math.abs(dy) >= Math.abs(dx)) {
+          const cy1 = p1.y + (p2.y - p1.y) * 0.5;
+          const cy2 = p2.y - (p2.y - p1.y) * 0.5;
+          d = `M ${p1.x} ${p1.y} C ${p1.x} ${cy1}, ${p2.x} ${cy2}, ${p2.x} ${p2.y}`;
+        } else {
+          const cx1 = p1.x + (p2.x - p1.x) * 0.5;
+          const cx2 = p2.x - (p2.x - p1.x) * 0.5;
+          d = `M ${p1.x} ${p1.y} C ${cx1} ${p1.y}, ${cx2} ${p2.y}, ${p2.x} ${p2.y}`;
+        }
+
+        const halo = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        halo.setAttribute('d', d);
+        halo.setAttribute('fill', 'none');
+        halo.setAttribute('stroke', strokeColor);
+        halo.setAttribute('stroke-width', isDown ? '5' : '6');
+        halo.setAttribute('stroke-opacity', isDown ? '0.5' : '0.22');
+        halo.setAttribute('filter', 'url(#neon-glow)');
+        svgConnections.appendChild(halo);
+
+        const core = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        core.setAttribute('d', d);
+        core.setAttribute('fill', 'none');
+        core.setAttribute('stroke', strokeColor);
+        core.setAttribute('stroke-width', isDown ? '3' : '2.5');
+        core.setAttribute('stroke-opacity', isDown ? '1' : '0.95');
+        if (!isDown) {
+          core.classList.add('circuit-line');
+          core.setAttribute('marker-end', marker);
+        } else {
+          core.setAttribute('stroke-dasharray', '6 4');
+        }
+        svgConnections.appendChild(core);
+
+        const mx = (p1.x + p2.x) / 2;
+        const my = (p1.y + p2.y) / 2;
+        pathMap[t.id] = { pathElement: core, trunk: t, p1, p2, mx, my, isDown };
+
+        const badge = document.createElement('div');
+        badge.className = `trunk-pill ${isDown ? 'down' : ''}`;
+        badge.style.left = `${mx}px`;
+        badge.style.top = `${my}px`;
+        badge.innerHTML = isDown ? `⚠️ DOWN` : `<span>${t.calls} ch</span>`;
+        badge.onclick = () => openEditTrunkModal(t.id);
+        badgesLayer.appendChild(badge);
+      });
+    }
+
+    class CallParticle {
+      constructor(trunkInfo) {
+        this.trunkId = trunkInfo.id;
+        this.t = 0.0;
+        this.speed = (0.0035 + Math.random() * 0.005) * simulationMultiplier;
+        
+        if (trunkInfo.type === 'inbound') this.color = '#00e5ff';
+        else if (trunkInfo.type === 'core') this.color = '#00f5a0';
+        else if (trunkInfo.type === 'overseas') this.color = '#c084fc';
+        else this.color = '#f59e0b';
+
+        this.radius = 3 + Math.random() * 2;
+        this.alive = true;
+      }
+
+      update() {
+        this.t += this.speed;
+        if (this.t >= 1) this.alive = false;
+      }
+
+      draw(ctx) {
+        const item = pathMap[this.trunkId];
+        if (!item || item.isDown) return;
+
+        try {
+          const pt = item.pathElement.getPointAtLength(this.t * item.pathElement.getTotalLength());
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, this.radius, 0, Math.PI * 2);
+          ctx.fillStyle = this.color;
+          ctx.shadowColor = this.color;
+          ctx.shadowBlur = 10;
+          ctx.fill();
+          ctx.restore();
+        } catch (e) {
+          const { p1, p2 } = item;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(p1.x + (p2.x - p1.x) * this.t, p1.y + (p2.y - p1.y) * this.t, this.radius, 0, Math.PI * 2);
+          ctx.fillStyle = this.color;
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = this.color;
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      currentConfig.trunks.forEach(t => {
+        if (t.status === 'DOWN') return;
+        const chance = (t.calls / 160) * 0.045 * simulationMultiplier;
+        if (Math.random() < chance) {
+          particles.push(new CallParticle(t));
+        }
+      });
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.update();
+        if (p.alive) p.draw(ctx);
+        else particles.splice(i, 1);
+      }
+
+      requestAnimationFrame(animateParticles);
+    }
+
+    // -------------------------------------------------------------
+    // NODE / ZONE DRILL-DOWN LOGIC (USER REQUESTED!)
+    // -------------------------------------------------------------
+    function handleNodeClick(nodeId, event) {
+      if (isConnectingTrunk) {
+        event.stopPropagation();
+        if (!connectSourceNodeId) {
+          connectSourceNodeId = nodeId;
+          document.getElementById(nodeId).classList.add('connecting-source');
+          showToast(`출발 노드 [${nodeId}] 선택됨. 도착할 노드를 클릭하세요.`);
+        } else {
+          if (connectSourceNodeId === nodeId) {
+            showToast('동일한 노드끼리는 연결할 수 없습니다.');
+            return;
+          }
+          const newTrunkId = `t_${connectSourceNodeId}_${nodeId}_${Date.now()}`;
+          const calls = prompt('새 회선의 기본 활성 통화량(채널 수)을 입력하세요:', '120');
+          if (calls !== null) {
+            currentConfig.trunks.push({
+              id: newTrunkId,
+              from: connectSourceNodeId,
+              to: nodeId,
+              type: 'core',
+              calls: parseInt(calls) || 100,
+              status: 'UP'
+            });
+            updateTrunkLines();
+            showToast('🔗 신규 회선이 연결되었습니다!');
+          }
+          document.querySelectorAll('.connecting-source').forEach(el => el.classList.remove('connecting-source'));
+          connectSourceNodeId = null;
+          isConnectingTrunk = false;
+          document.getElementById('btn-tool-connect').classList.remove('active');
+        }
+        return;
+      }
+
+      // In View Mode -> Detailed Inspection Drilldown!
+      if (!isEditMode) {
+        const node = currentConfig.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+
+        // If it's VG1~6 (C8300 Router Pool) -> Open C8300 E1 matrix!
+        if (nodeId.includes('vg') || node.name.includes('VG') || node.name.includes('C8300')) {
+          const dc = nodeId.includes('yeouido') ? 'yeouido' : 'gimpo';
+          openC8300Modal(dc);
+        } else {
+          // Open Node Properties Inspector
+          openEditNodeModal(nodeId);
+        }
+      }
+    }
+
+    // Zone (배경 틀) Click -> Drill-Down
+    function handleZoneClick(zoneId, event) {
+      if (event) event.stopPropagation();
+      if (isEditMode) return;
+
+      currentDrillZoneId = zoneId;
+      const zone = currentConfig.zones.find(z => z.id === zoneId);
+      if (!zone) return;
+
+      document.getElementById('zone-detail-title').innerText = `${zone.title} - 세부 설비 관제`;
+      document.getElementById('zone-detail-subtitle').innerText = `좌표: (${zone.x}, ${zone.y}) · 크기: ${zone.width} x ${zone.height}px`;
+
+      // Find all nodes geometrically inside this zone
+      const insideNodes = currentConfig.nodes.filter(n => {
+        return (n.x >= zone.x - 20 && n.x <= zone.x + zone.width &&
+                n.y >= zone.y - 20 && n.y <= zone.y + zone.height);
+      });
+
+      let totalCalls = 0;
+      let hasC8300 = false;
+      const nodelistEl = document.getElementById('zone-detail-nodelist');
+      nodelistEl.innerHTML = '';
+
+      if (insideNodes.length === 0) {
+        nodelistEl.innerHTML = '<div style="color:#64748b; font-size:12px;">현재 이 구역 내에 배치된 장비가 없습니다.</div>';
+      } else {
+        insideNodes.forEach(n => {
+          totalCalls += n.calls;
+          if (n.id.includes('vg') || n.name.includes('VG')) hasC8300 = true;
+
+          const item = document.createElement('div');
+          item.style.cssText = 'background:rgba(15,23,42,0.7); border:1px solid rgba(255,255,255,0.08); padding:8px 12px; border-radius:5px; display:flex; justify-content:space-between; align-items:center;';
+          item.innerHTML = `
+            <div>
+              <span style="font-weight:700; color:#fff;">${n.name}</span>
+              <span style="font-size:10px; color:#94a3b8; margin-left:6px;">(${n.type.toUpperCase()})</span>
+              <div style="font-size:10px; color:#64748b;">${n.sub || ''}</div>
+            </div>
+            <div style="font-family:'Chakra Petch'; font-size:13px; font-weight:700; color:#00e5ff;">${n.calls} calls</div>
+          `;
+          nodelistEl.appendChild(item);
+        });
+      }
+
+      // Zone KPIs
+      document.getElementById('zone-detail-kpis').innerHTML = `
+        <div style="background:rgba(15,23,42,0.8); border:1px solid rgba(0,229,255,0.25); border-radius:6px; padding:10px 14px;">
+          <div style="font-size:11px; color:#94a3b8;">구역 총 통화량</div>
+          <div style="font-family:'Chakra Petch'; font-size:17px; font-weight:700; color:#00e5ff;">${totalCalls.toLocaleString()} calls</div>
+        </div>
+        <div style="background:rgba(15,23,42,0.8); border:1px solid rgba(0,245,160,0.25); border-radius:6px; padding:10px 14px;">
+          <div style="font-size:11px; color:#94a3b8;">수용 노드 수</div>
+          <div style="font-family:'Chakra Petch'; font-size:17px; font-weight:700; color:#00f5a0;">${insideNodes.length}개 장비 가동 중</div>
+        </div>
+      `;
+
+      // C8300 Shortcut button
+      const shortcut = document.getElementById('zone-detail-c8300-shortcut');
+      if (hasC8300 || zoneId.includes('gimpo') || zoneId.includes('yeouido')) {
+        shortcut.style.display = 'block';
+      } else {
+        shortcut.style.display = 'none';
+      }
+
+      document.getElementById('zone-drilldown-modal').style.display = 'flex';
+    }
+
+    function openC8300ModalFromZone() {
+      closeAllModals();
+      const dc = (currentDrillZoneId && currentDrillZoneId.includes('yeouido')) ? 'yeouido' : 'gimpo';
+      openC8300Modal(dc);
+    }
+
+    // -------------------------------------------------------------
+    // CISCO C8300 E1 MATRIX CONTROLLER
+    // -------------------------------------------------------------
+    function openC8300Modal(dc) {
+      currentSelectedDC = dc;
+      document.getElementById('c8300-modal-title').innerText = 
+        `CISCO CATALYST 8300 VG POOL (6대) - ${dc === 'gimpo' ? '김포 센터' : '여의도 센터'} E1 회선 및 포트 상세 관제`;
+      document.getElementById('c8300-modal-subtitle').innerText = 
+        `${dc === 'gimpo' ? '김포 센터 국선 수용' : '여의도 국선 백업/분산'} · 1대당 NIM-8MFT-T1/E1 모듈 2개 (16포트) 총 96포트 E1 국선/트렁크 실시간 물리 포트 관제`;
+
+      renderC8300Routers('all');
+      document.getElementById('c8300-modal').style.display = 'flex';
+    }
+
+    function renderC8300Routers(filterUnit) {
+      const routers = currentSelectedDC === 'gimpo' ? c8300GimpoData : c8300YeouidoData;
+      const container = document.getElementById('c8300-chassis-container');
+      container.innerHTML = '';
+
+      let totalUp = 0, totalDown = 0, totalBch = 0;
+
+      routers.forEach(r => {
+        if (filterUnit !== 'all' && String(r.num) !== String(filterUnit)) return;
+
+        const card = document.createElement('div');
+        card.className = 'c8300-chassis-card';
+
+        let routerBch = 0;
+        let modulesHtml = '';
+
+        r.modules.forEach(m => {
+          let portsHtml = '';
+          m.ports.forEach(p => {
+            if (p.status === 'UP') { totalUp++; routerBch += p.activeCh; totalBch += p.activeCh; }
+            else if (p.status === 'DOWN') { totalDown++; }
+
+            const statusClass = p.status.toLowerCase();
+            portsHtml += `
+              <div class="e1-port-jack ${statusClass}" onclick="inspectE1Port('${r.id}', '${p.port}', event)">
+                <div class="port-top-row">
+                  <span class="port-id-label">P${p.port}</span>
+                  <span class="port-led ${statusClass}"></span>
+                </div>
+                <div class="port-carrier-tag" title="${p.carrier}">${p.carrier}</div>
+                <div class="port-ch-meter">
+                  <span style="font-size:9px; color:#94a3b8;">${p.status}</span>
+                  <span>${p.activeCh}/30ch</span>
+                </div>
+              </div>
+            `;
+          });
+
+          modulesHtml += `
+            <div class="nim-module-panel">
+              <div class="nim-header">
+                <span>🔧 ${m.name}</span>
+                <span style="color:#00f5a0; font-size:10px;">8x E1 RJ48</span>
+              </div>
+              <div class="ports-grid-8">${portsHtml}</div>
+            </div>
+          `;
+        });
+
+        card.innerHTML = `
+          <div class="chassis-head-line">
+            <div class="chassis-title">
+              <span>🖥️ ${r.id}</span>
+              <span style="font-size:11px; color:#94a3b8; font-weight:normal;">| IP: ${r.ip} | CPU: ${r.cpu}% | 온도: ${r.temp}°C</span>
+            </div>
+            <div style="font-family:'Chakra Petch'; font-size:12px; color:#00e5ff; font-weight:700;">
+              가동 B-Channel: <span style="color:#00f5a0;">${routerBch} ch</span> / 480 ch
+            </div>
+          </div>
+          <div class="nim-module-container">${modulesHtml}</div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      // Update Header Stats
+      document.getElementById('e1-stat-up').innerText = `${totalUp} UP`;
+      document.getElementById('e1-stat-down').innerText = `${totalDown} DOWN`;
+      document.getElementById('e1-stat-bch').innerText = `${totalBch.toLocaleString()} / 2,160 ch`;
+    }
+
+    function filterC8300Tab(tab, btnEl) {
+      document.querySelectorAll('.c8300-tab-btn').forEach(b => b.classList.remove('active'));
+      btnEl.classList.add('active');
+      renderC8300Routers(tab);
+    }
+
+    // Inspect individual E1 Port Details (Cisco IOS-XE Diagnostics)
+    function inspectE1Port(routerId, portId, event) {
+      if (event) event.stopPropagation();
+      const routers = currentSelectedDC === 'gimpo' ? c8300GimpoData : c8300YeouidoData;
+      const router = routers.find(r => r.id === routerId);
+      if (!router) return;
+
+      let portObj = null;
+      router.modules.forEach(m => {
+        const found = m.ports.find(p => p.port === portId);
+        if (found) portObj = found;
+      });
+      if (!portObj) return;
+
+      const drawer = document.getElementById('port-diag-drawer');
+      document.getElementById('diag-port-title').innerText = 
+        `[${router.id}] controller E1 ${portObj.port} 진단 및 상세 계층 상태`;
+
+      document.getElementById('diag-port-content').innerHTML = `
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px;">
+          <div><b>회선 명칭:</b> <span style="color:#fff;">${portObj.carrier}</span></div>
+          <div><b>포트 상태:</b> <span style="color:${portObj.status === 'UP' ? '#00f5a0' : '#ff3366'}; font-weight:bold;">${portObj.status}</span></div>
+          <div><b>활성 B-Ch:</b> <span style="color:#f59e0b;">${portObj.activeCh} / 30 채널</span></div>
+          <div><b>D-Ch 시그널링:</b> <span style="color:#a78bfa;">${portObj.dChannel}</span></div>
+        </div>
+        <div style="background:rgba(0,0,0,0.5); padding:8px; border-radius:4px; font-family:'JetBrains Mono', monospace; font-size:10px; color:#cbd5e1;">
+          # show controller E1 ${portObj.port}<br/>
+          E1 ${portObj.port} is ${portObj.status.toLowerCase()}, line code is ${portObj.lineCode}, framing is ${portObj.framing}<br/>
+          Applique type is Channelized E1 - 120 ohm balanced (RJ-48)<br/>
+          Alarms detected: <span style="color:${portObj.alarm.includes('Red') ? '#ff3366' : '#00f5a0'};">${portObj.alarm}</span><br/>
+          ISDN Q.921 Layer 2 Status: ${portObj.dChannel} | CRC4 Errors: 0, Slips: 0
+        </div>
+        <div style="margin-top:6px; display:flex; gap:8px;">
+          <button class="hud-btn" style="font-size:10px;" onclick="togglePortSimStatus('${router.id}', '${portObj.port}')">
+            ⚡ 이 포트 상태 토글 (UP ↔ DOWN 테스트)
+          </button>
+        </div>
+      `;
+
+      drawer.style.display = 'block';
+    }
+
+    function togglePortSimStatus(routerId, portId) {
+      const routers = currentSelectedDC === 'gimpo' ? c8300GimpoData : c8300YeouidoData;
+      const router = routers.find(r => r.id === routerId);
+      if (!router) return;
+      router.modules.forEach(m => {
+        const found = m.ports.find(p => p.port === portId);
+        if (found) {
+          found.status = (found.status === 'UP') ? 'DOWN' : 'UP';
+          found.activeCh = (found.status === 'UP') ? 25 : 0;
+          found.alarm = (found.status === 'UP') ? 'None' : 'Red Alarm (Loss of Signal / LOS)';
+          inspectE1Port(routerId, portId);
+          renderC8300Routers('all');
+          playAlertChime();
+        }
+      });
+    }
+
+    function closeDiagDrawer() {
+      document.getElementById('port-diag-drawer').style.display = 'none';
+    }
+
+    // -------------------------------------------------------------
+    // EDIT MODE & TOPOLOGY ACTIONS
+    // -------------------------------------------------------------
+    function toggleEditMode() {
+      isEditMode = !isEditMode;
+      const btn = document.getElementById('btn-toggle-edit');
+
+      if (isEditMode) {
+        document.body.classList.add('body-edit-mode');
+        btn.classList.add('active');
+        btn.innerHTML = '✅ 편집 완료 (저장)';
+        editToolbar.style.display = 'flex';
+        showToast('🛠️ 토폴로지 편집 모드: 노드와 배경 틀을 자유롭게 이동하고, 상단 팔레트도 원하는 위치로 드래그하세요.');
+      } else {
+        document.body.classList.remove('body-edit-mode');
+        btn.classList.remove('active');
+        btn.innerHTML = '🛠️ 토폴로지 편집 모드';
+        editToolbar.style.display = 'none';
+        isConnectingTrunk = false;
+        connectSourceNodeId = null;
+        document.querySelectorAll('.connecting-source').forEach(el => el.classList.remove('connecting-source'));
+        saveTopologyConfig();
+      }
+    }
+
+    function toggleConnectTool() {
+      isConnectingTrunk = !isConnectingTrunk;
+      connectSourceNodeId = null;
+      document.querySelectorAll('.connecting-source').forEach(el => el.classList.remove('connecting-source'));
+      const btn = document.getElementById('btn-tool-connect');
+      if (isConnectingTrunk) {
+        btn.classList.add('active');
+        showToast('🔗 회선 연결 모드: 시작할 노드를 먼저 클릭하세요.');
+      } else {
+        btn.classList.remove('active');
+      }
+    }
+
+    // Modal Control: Node Add / Edit
+    function openAddNodeModal(type) {
+      document.getElementById('node-modal-heading').innerText = '새 노드 추가';
+      document.getElementById('edit-node-id').value = '';
+      document.getElementById('edit-node-type').value = type;
+      document.getElementById('edit-node-name').value = type === 'cucm' ? '신규 CUCM' : (type === 'vg' ? 'VG 7~12 (C8300)' : (type === 'cloud' ? '신규 ISP' : '신규 단말군'));
+      document.getElementById('edit-node-sub').value = type === 'vg' ? 'C8300 6대' : 'Active: 100';
+      document.getElementById('edit-node-calls').value = 100;
+      document.getElementById('node-modal').style.display = 'flex';
+    }
+
+    function openEditNodeModal(nodeId, event) {
+      if (event) event.stopPropagation();
+      const node = currentConfig.nodes.find(n => n.id === nodeId);
+      if (!node) return;
+      document.getElementById('node-modal-heading').innerText = '노드 속성 수정';
+      document.getElementById('edit-node-id').value = node.id;
+      document.getElementById('edit-node-type').value = node.type;
+      document.getElementById('edit-node-name').value = node.name;
+      document.getElementById('edit-node-sub').value = node.sub || '';
+      document.getElementById('edit-node-calls').value = node.calls;
+      document.getElementById('node-modal').style.display = 'flex';
+    }
+
+    function confirmSaveNode() {
+      const id = document.getElementById('edit-node-id').value;
+      const type = document.getElementById('edit-node-type').value;
+      const name = document.getElementById('edit-node-name').value.trim();
+      const sub = document.getElementById('edit-node-sub').value.trim();
+      const calls = parseInt(document.getElementById('edit-node-calls').value) || 0;
+
+      if (!name) return alert('명칭을 입력해주세요.');
+
+      if (id) {
+        const node = currentConfig.nodes.find(n => n.id === id);
+        if (node) {
+          node.type = type;
+          node.name = name;
+          node.sub = sub;
+          node.calls = calls;
+        }
+      } else {
+        currentConfig.nodes.push({
+          id: `node_${Date.now()}`,
+          type,
+          name,
+          sub,
+          calls,
+          status: 'UP',
+          x: 400 + Math.random() * 80,
+          y: 200 + Math.random() * 80
+        });
+      }
+
+      closeAllModals();
+      renderAll();
+      showToast('노드가 반영되었습니다.');
+    }
+
+    function deleteNode(nodeId, event) {
+      if (event) event.stopPropagation();
+      if (confirm('이 노드를 삭제하시겠습니까? 연결된 회선도 함께 제거됩니다.')) {
+        currentConfig.nodes = currentConfig.nodes.filter(n => n.id !== nodeId);
+        currentConfig.trunks = currentConfig.trunks.filter(t => t.from !== nodeId && t.to !== nodeId);
+        renderAll();
+        showToast('노드 및 연결 회선이 삭제되었습니다.');
+      }
+    }
+
+    // Modal Control: Zone Add / Edit / Color / Opacity
+    function setZoneBorderPreset(hex) {
+      document.getElementById('edit-zone-border-color').value = hex;
+      document.getElementById('edit-zone-border-color-hex').value = hex;
+      updateZoneModalPreview();
+    }
+
+    function setZoneBgPreset(hex) {
+      document.getElementById('edit-zone-bg-color').value = hex;
+      document.getElementById('edit-zone-bg-color-hex').value = hex;
+      updateZoneModalPreview();
+    }
+
+    function syncHexToPicker(type, val) {
+      val = val.trim();
+      if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+        if (type === 'border') document.getElementById('edit-zone-border-color').value = val;
+        if (type === 'bg') document.getElementById('edit-zone-bg-color').value = val;
+        updateZoneModalPreview();
+      }
+    }
+
+    function updateZoneModalPreview() {
+      const title = document.getElementById('edit-zone-title').value || '미리보기';
+      const bColor = document.getElementById('edit-zone-border-color').value;
+      const bHex = document.getElementById('edit-zone-border-color-hex');
+      if (bHex && document.activeElement !== bHex) bHex.value = bColor;
+
+      const bgColor = document.getElementById('edit-zone-bg-color').value;
+      const bgHex = document.getElementById('edit-zone-bg-color-hex');
+      if (bgHex && document.activeElement !== bgHex) bgHex.value = bgColor;
+
+      const bgOp = parseInt(document.getElementById('edit-zone-bg-opacity').value) || 45;
+      const borderOp = parseInt(document.getElementById('edit-zone-border-opacity').value) || 60;
+
+      document.getElementById('edit-zone-bg-opacity-val').innerText = `${bgOp}%`;
+      document.getElementById('edit-zone-border-opacity-val').innerText = `${borderOp}%`;
+
+      const box = document.getElementById('zone-modal-preview-box');
+      if (box) {
+        box.style.border = `1.5px solid ${hexToRgba(bColor, borderOp / 100)}`;
+        box.style.backgroundColor = hexToRgba(bgColor, bgOp / 100);
+        box.style.boxShadow = `inset 0 0 25px rgba(0,0,0,0.8), 0 0 16px ${hexToRgba(bColor, 0.25)}`;
+      }
+
+      const tag = document.getElementById('zone-modal-preview-tag');
+      const dot = document.getElementById('zone-modal-preview-dot');
+      const text = document.getElementById('zone-modal-preview-tag-text');
+      if (tag && dot && text) {
+        tag.style.borderColor = hexToRgba(bColor, 0.5);
+        tag.style.color = bColor;
+        tag.style.background = '#090e1c';
+        dot.style.background = bColor;
+        dot.style.boxShadow = `0 0 6px ${bColor}`;
+        text.innerText = title;
+      }
+    }
+
+    function openAddZoneModal() {
+      document.getElementById('zone-modal-heading').innerText = '새 배경 틀(구역) 추가 & 스타일 설정';
+      document.getElementById('edit-zone-id').value = '';
+      document.getElementById('edit-zone-title').value = '신규 센터 구역';
+
+      document.getElementById('edit-zone-border-color').value = '#00e5ff';
+      document.getElementById('edit-zone-border-color-hex').value = '#00e5ff';
+      document.getElementById('edit-zone-border-opacity').value = 60;
+
+      document.getElementById('edit-zone-bg-color').value = '#080e1c';
+      document.getElementById('edit-zone-bg-color-hex').value = '#080e1c';
+      document.getElementById('edit-zone-bg-opacity').value = 45;
+
+      updateZoneModalPreview();
+      document.getElementById('zone-modal').style.display = 'flex';
+    }
+
+    function openEditZoneModal(zoneId) {
+      const zone = currentConfig.zones.find(z => z.id === zoneId);
+      if (!zone) return;
+      document.getElementById('zone-modal-heading').innerText = '배경 틀(구역) 스타일 & 속성 수정';
+      document.getElementById('edit-zone-id').value = zone.id;
+      document.getElementById('edit-zone-title').value = zone.title;
+
+      const bColor = zone.borderColor || '#00e5ff';
+      document.getElementById('edit-zone-border-color').value = bColor;
+      document.getElementById('edit-zone-border-color-hex').value = bColor;
+      document.getElementById('edit-zone-border-opacity').value = (zone.borderOpacity !== undefined ? Math.round(zone.borderOpacity * 100) : 60);
+
+      const bgColor = zone.bgColor || '#080e1c';
+      document.getElementById('edit-zone-bg-color').value = bgColor;
+      document.getElementById('edit-zone-bg-color-hex').value = bgColor;
+      document.getElementById('edit-zone-bg-opacity').value = (zone.bgOpacity !== undefined ? Math.round(zone.bgOpacity * 100) : 45);
+
+      updateZoneModalPreview();
+      document.getElementById('zone-modal').style.display = 'flex';
+    }
+
+    function confirmSaveZone() {
+      const id = document.getElementById('edit-zone-id').value;
+      const title = document.getElementById('edit-zone-title').value.trim();
+      if (!title) return alert('구역 명칭을 입력해주세요.');
+
+      const borderColor = document.getElementById('edit-zone-border-color').value;
+      const borderOpacity = (parseInt(document.getElementById('edit-zone-border-opacity').value) || 60) / 100;
+      const bgColor = document.getElementById('edit-zone-bg-color').value;
+      const bgOpacity = (parseInt(document.getElementById('edit-zone-bg-opacity').value) || 45) / 100;
+
+      if (id) {
+        const zone = currentConfig.zones.find(z => z.id === id);
+        if (zone) {
+          zone.title = title;
+          zone.borderColor = borderColor;
+          zone.borderOpacity = borderOpacity;
+          zone.bgColor = bgColor;
+          zone.bgOpacity = bgOpacity;
+        }
+      } else {
+        currentConfig.zones.push({
+          id: `zone_${Date.now()}`,
+          title: title,
+          x: 250,
+          y: 180,
+          width: 480,
+          height: 320,
+          borderColor: borderColor,
+          borderOpacity: borderOpacity,
+          bgColor: bgColor,
+          bgOpacity: bgOpacity
+        });
+      }
+
+      closeAllModals();
+      renderZones();
+      showToast('배경 틀 스타일이 저장되었습니다.');
+    }
+
+    function deleteZone(zoneId) {
+      if (confirm('이 배경 틀(구역)을 삭제하시겠습니까? (내부 노드는 삭제되지 않습니다)')) {
+        currentConfig.zones = currentConfig.zones.filter(z => z.id !== zoneId);
+        renderZones();
+        showToast('배경 틀이 삭제되었습니다.');
+      }
+    }
+
+    // Theme Modal Functions
+    function openThemeModal() {
+      const theme = currentConfig.theme || { canvasBg: '#050811', gridOpacity: 35, glowOpacity: 12 };
+      document.getElementById('edit-theme-canvas-bg').value = theme.canvasBg || '#050811';
+      document.getElementById('edit-theme-canvas-bg-hex').value = theme.canvasBg || '#050811';
+      document.getElementById('edit-theme-grid-opacity').value = theme.gridOpacity !== undefined ? theme.gridOpacity : 35;
+      document.getElementById('edit-theme-glow-opacity').value = theme.glowOpacity !== undefined ? theme.glowOpacity : 12;
+
+      document.getElementById('edit-theme-grid-opacity-val').innerText = `${document.getElementById('edit-theme-grid-opacity').value}%`;
+      document.getElementById('edit-theme-glow-opacity-val').innerText = `${document.getElementById('edit-theme-glow-opacity').value}%`;
+
+      document.getElementById('theme-modal').style.display = 'flex';
+    }
+
+    function setThemeCanvasPreset(hex) {
+      document.getElementById('edit-theme-canvas-bg').value = hex;
+      document.getElementById('edit-theme-canvas-bg-hex').value = hex;
+      updateThemeModalLive();
+    }
+
+    function syncThemeHex(val) {
+      val = val.trim();
+      if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+        document.getElementById('edit-theme-canvas-bg').value = val;
+        updateThemeModalLive();
+      }
+    }
+
+    function updateThemeModalLive() {
+      const bg = document.getElementById('edit-theme-canvas-bg').value;
+      const hexEl = document.getElementById('edit-theme-canvas-bg-hex');
+      if (hexEl && document.activeElement !== hexEl) hexEl.value = bg;
+
+      const gridOp = parseInt(document.getElementById('edit-theme-grid-opacity').value) || 35;
+      const glowOp = parseInt(document.getElementById('edit-theme-glow-opacity').value) || 12;
+
+      document.getElementById('edit-theme-grid-opacity-val').innerText = `${gridOp}%`;
+      document.getElementById('edit-theme-glow-opacity-val').innerText = `${glowOp}%`;
+
+      applyGlobalTheme({ canvasBg: bg, gridOpacity: gridOp, glowOpacity: glowOp });
+    }
+
+    function applyGlobalTheme(theme) {
+      if (!theme) return;
+      const bg = theme.canvasBg || '#050811';
+      const grid = (theme.gridOpacity !== undefined ? theme.gridOpacity : 35) / 1000;
+      const glow = (theme.glowOpacity !== undefined ? theme.glowOpacity : 12) / 100;
+
+      document.documentElement.style.setProperty('--bg-dark', bg);
+      document.documentElement.style.setProperty('--bg-grid', `rgba(0, 229, 255, ${grid})`);
+      document.documentElement.style.setProperty('--bg-radial-opacity', glow);
+    }
+
+    function confirmSaveTheme() {
+      const bg = document.getElementById('edit-theme-canvas-bg').value;
+      const gridOp = parseInt(document.getElementById('edit-theme-grid-opacity').value) || 35;
+      const glowOp = parseInt(document.getElementById('edit-theme-glow-opacity').value) || 12;
+
+      currentConfig.theme = { canvasBg: bg, gridOpacity: gridOp, glowOpacity: glowOp };
+      applyGlobalTheme(currentConfig.theme);
+      closeAllModals();
+      showToast('전광판 전체 테마가 저장되었습니다.');
+    }
+
+    function applyThemeToAllZones() {
+      const borderCol = prompt('모든 틀에 적용할 테두리 색상 코드 (예: #00e5ff, #00f5a0):', '#00e5ff');
+      if (!borderCol) return;
+      const bgOpStr = prompt('모든 틀에 적용할 배경 투명도 (0 ~ 100 %):', '45');
+      const bgOp = (parseInt(bgOpStr) || 45) / 100;
+
+      currentConfig.zones.forEach(z => {
+        z.borderColor = borderCol;
+        z.bgOpacity = bgOp;
+      });
+      renderZones();
+      showToast('모든 배경 틀에 스타일이 일괄 적용되었습니다.');
+    }
+
+    // Trunk Modal
+    function openEditTrunkModal(trunkId) {
+      if (!isEditMode) return;
+      const trunk = currentConfig.trunks.find(t => t.id === trunkId);
+      if (!trunk) return;
+      document.getElementById('edit-trunk-id').value = trunk.id;
+      document.getElementById('edit-trunk-calls').value = trunk.calls;
+      document.getElementById('edit-trunk-status').value = trunk.status;
+      document.getElementById('trunk-modal-endpoints').innerText = `연결 경로: ${trunk.from} ➔ ${trunk.to}`;
+      document.getElementById('trunk-modal').style.display = 'flex';
+    }
+
+    function confirmSaveTrunk() {
+      const id = document.getElementById('edit-trunk-id').value;
+      const trunk = currentConfig.trunks.find(t => t.id === id);
+      if (trunk) {
+        trunk.calls = parseInt(document.getElementById('edit-trunk-calls').value) || 0;
+        trunk.status = document.getElementById('edit-trunk-status').value;
+      }
+      closeAllModals();
+      updateTrunkLines();
+      showToast('회선 설정이 저장되었습니다.');
+    }
+
+    function deleteSelectedTrunk() {
+      const id = document.getElementById('edit-trunk-id').value;
+      if (confirm('이 회선(트렁크)을 삭제하시겠습니까?')) {
+        currentConfig.trunks = currentConfig.trunks.filter(t => t.id !== id);
+        closeAllModals();
+        updateTrunkLines();
+        showToast('회선이 삭제되었습니다.');
+      }
+    }
+
+    function closeAllModals() {
+      document.getElementById('c8300-modal').style.display = 'none';
+      document.getElementById('zone-drilldown-modal').style.display = 'none';
+      document.getElementById('node-modal').style.display = 'none';
+      document.getElementById('zone-modal').style.display = 'none';
+      document.getElementById('theme-modal').style.display = 'none';
+      document.getElementById('trunk-modal').style.display = 'none';
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast-msg');
+      toast.innerText = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 2800);
+    }
+
+    // Web Audio Chime
+    let soundEnabled = true;
+    let audioCtx = null;
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const btn = document.getElementById('btn-sound');
+      if (soundEnabled) {
+        btn.innerHTML = '🔊 사운드: ON';
+        btn.style.color = '#e2e8f0';
+        playAlertChime();
+      } else {
+        btn.innerHTML = '🔇 사운드: MUTE';
+        btn.style.color = '#f87171';
+      }
+    }
+
+    function playAlertChime() {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const now = audioCtx.currentTime;
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(880, now);
+        osc1.frequency.exponentialRampToValueAtTime(440, now + 0.28);
+
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(587.33, now);
+        osc2.frequency.exponentialRampToValueAtTime(320, now + 0.35);
+
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.42);
+        osc2.stop(now + 0.42);
+      } catch (e) {}
+    }
+
+    // Scenarios
+    function changeScenario(val) {
+      currentScenario = val;
+
+      currentConfig.trunks.forEach(t => { t.status = 'UP'; });
+      currentConfig.nodes.forEach(n => { n.status = 'UP'; });
+
+      if (val === 'normal') {
+        simulationMultiplier = 1.0;
+        updateKpis(1482, '14 / 14 정상', 48.2, '4.39 (우수)');
+        showToast('정상 운용: 모든 CUCM 및 VG 정상 가동');
+      } else if (val === 'surge') {
+        simulationMultiplier = 2.4;
+        updateKpis(2490, '14 / 14 고부하 주의', 114.5, '4.15 (양호)');
+        showToast('주의: 전사 통화량 폭주 (피크 타임 활성)');
+        playAlertChime();
+      } else if (val === 'yeouido_down') {
+        simulationMultiplier = 1.2;
+        const yTrunk1 = currentConfig.trunks.find(t => t.id === 't_yeouido_isp_vg');
+        const yTrunk2 = currentConfig.trunks.find(t => t.id === 't_yeouido_vg_sme');
+        if (yTrunk1) yTrunk1.status = 'DOWN';
+        if (yTrunk2) yTrunk2.status = 'DOWN';
+
+        const yNode1 = currentConfig.nodes.find(n => n.id === 'node-yeouido-isp');
+        const yNode2 = currentConfig.nodes.find(n => n.id === 'node-yeouido-vg');
+        if (yNode1) yNode1.status = 'DOWN';
+        if (yNode2) yNode2.status = 'DOWN';
+
+        updateKpis(1340, '12 / 14 (여의도 장애)', 42.1, '4.02 (주의)');
+        showToast('경고: 여의도 ISP 회선 DOWN! SMEVG Failover 우회');
+        playAlertChime();
+      } else if (val === 'hk_down') {
+        simulationMultiplier = 1.0;
+        const hkTrunk = currentConfig.trunks.find(t => t.id === 't_sales1_hk');
+        if (hkTrunk) hkTrunk.status = 'DOWN';
+        const hkNode = currentConfig.nodes.find(n => n.id === 'node-hk');
+        if (hkNode) hkNode.status = 'DOWN';
+
+        updateKpis(1448, '13 / 14 (홍콩 단선)', 46.8, '4.32 (우수)');
+        showToast('경고: 영업1 ↔ 홍콩 지사 SIP 트렁크 단선!');
+        playAlertChime();
+      }
+
+      renderNodes();
+      updateTrunkLines();
+    }
+
+    function updateKpis(calls, trunkText, cps, mos) {
+      document.getElementById('kpi-total-calls').innerText = `${calls.toLocaleString()} calls`;
+      document.getElementById('kpi-trunk-status').innerText = trunkText;
+      document.getElementById('kpi-cps').innerText = `${cps} cps`;
+      document.getElementById('kpi-mos').innerText = mos;
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const timeStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      document.getElementById('live-clock').innerText = timeStr;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function resizeCanvas() {
+      const rect = board.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      svgConnections.setAttribute('width', rect.width);
+      svgConnections.setAttribute('height', rect.height);
+      svgConnections.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+      updateTrunkLines();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // Initial load
+    window.onload = () => {
+      closeAllModals();
+      setupDraggableToolbar();
+      loadSavedConfig();
+      renderAll();
+      resizeCanvas();
+      animateParticles();
+      setTimeout(resizeCanvas, 150);
+      setTimeout(resizeCanvas, 600);
+    };
+  </script>
+</body>
+</html>
